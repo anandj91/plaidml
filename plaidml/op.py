@@ -2534,7 +2534,15 @@ def summation(value, axes=None, keepdims=False, floatx=plaidml.DType.FLOAT32):
 
 def tanh(data):
     """Elementwise hyperbolic tangent."""
-    return tile.unary_op(data, 'tanh(I)', 'Tanh')
+    #return tile.unary_op(data, 'tanh(I)', 'Tanh')
+    return tanh_appx(data)
+
+def tanh_appx(data):
+    operation = Operation(
+        'function (I) -> (O) {{ O = {}; }}'.format('tanh(I)'), [('I', data)], [('O', data.shape)],
+        name='TanhAppx')
+
+    return operation.sole_output()
 
 
 def unsqueeze(x, axes):
