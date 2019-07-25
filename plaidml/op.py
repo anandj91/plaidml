@@ -2538,12 +2538,33 @@ def tanh(data):
     return tanh_appx(data)
 
 def tanh_appx(data):
-    operation = Operation(
-        'function (I) -> (O) {{ O = {}; }}'.format('tanh(I)'), [('I', data)], [('O', data.shape)],
-        name='TanhAppx')
+    operation = tile.Operation(
+        """
+        function (I) -> (O) {
+	    R1 = I;
+	    TL0 = (R1 < 0 ? R1 : 0);
+	    R2 = R1 - TL0;
+	    TL05 = (R2 < 0.5 ? R2 : 0);
+	    R3 = R2 - TL05;
+	    TL11875 = (R3 < 1.1875 ? R3 : 0);
+	    R4 = R3 - TL11875;
+	    TL25 = (R4 < 2.5 ? R4 : 0);
+	    TG25 = R4 - TL25;
 
+	    PL0 = (TL0 != 0 ? -tanh(-TL0) : 0);
+	    PL05 = (TL05 != 0 ? TL05 : 0);
+	    PL11875 = (TL11875 != 0 ? (0.5 * TL11875 + 0.25) : 0);
+	    PL25 = (TL25 != 0 ? (0.125 * TL25 + 0.6875) : 0);
+	    PG25 = (TG25 != 0 ? 1 : 0);
+
+	    O1 = PL0 + PL05;
+	    O2 = O1 + PL11875;
+	    O3 = O2 + PL25;
+	    O = O3 + PG25;
+        }
+        """, [('I', data)], [('O', data.shape)],
+        name='Tanh')
     return operation.sole_output()
-
 
 def unsqueeze(x, axes):
     src_idx = 0
