@@ -52,21 +52,19 @@ def load_data():
 
 
 def build_model(use_batch_normalization=False, use_dropout=False):
+    print('================= Sequential ====================')
+    sys.stdout.flush()
     model = Sequential()
-    model.add(Dense(128, input_shape=(784,)))
-    model.add(Activation('relu'))
-    if use_batch_normalization:
-        model.add(BatchNormalization())
-    if use_dropout:
-        model.add(Dropout(0.2))
-    model.add(Dense(128))
-    model.add(Activation('relu'))
-    if use_batch_normalization:
-        model.add(BatchNormalization())
-    if use_dropout:
-        model.add(Dropout(0.2))
-    model.add(Dense(10))
-    model.add(Activation('softmax'))
+    print('================= Dense1 ====================')
+    sys.stdout.flush()
+    d = Dense(10, input_shape=(784,))
+    model.add(d)
+    print('================= Activation1 ====================')
+    sys.stdout.flush()
+    a = Activation('softmax')
+    model.add(a)
+    print('================= BUILD DONE ====================')
+    sys.stdout.flush()
 
     return model
 
@@ -77,28 +75,30 @@ def run(use_batch_normalization=False, use_dropout=False):
 
     # the data, shuffled and split between train and test sets
     X_train, Y_train, X_test, Y_test = load_data()
-    print(X_train.shape[0], 'train samples')
-    print(X_test.shape[0], 'test samples')
+    X_train = X_train[:batch_size,:]
+    Y_train = Y_train[:batch_size,:]
+    print(X_train.shape, 'train samples')
+    print(X_test.shape, 'test samples')
 
+    print('================= BUILD ====================')
+    sys.stdout.flush()
     model = build_model(use_batch_normalization=use_batch_normalization, use_dropout=use_dropout)
 
+    print('================= SUMMARY ====================')
+    sys.stdout.flush()
     model.summary()
 
+    print('================= COMPILE ====================')
+    sys.stdout.flush()
     model.compile(loss='categorical_crossentropy', optimizer=RMSprop(), metrics=['accuracy'])
 
+    print('================= FIT ====================')
+    sys.stdout.flush()
     history = model.fit(X_train, Y_train, batch_size=batch_size, epochs=epochs, verbose=1)
-
-    score = model.evaluate(X_test, Y_test, verbose=1)
-
-    return score
+    print('================= DONE ====================')
+    sys.stdout.flush()
 
 
 if __name__ == '__main__':
-    score = run()
-
-    print('Test score:', score[0])
-    print('Test accuracy:', score[1])
-
-    if .75 < score[1]:
-        sys.exit(0)
-    sys.exit(1)
+    plaidml._internal_set_vlog(4)
+    run()
