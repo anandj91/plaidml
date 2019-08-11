@@ -1200,6 +1200,7 @@ DTYPE_INFOS = {
     plaidml.DType.FLOAT16: DTypeInfo(base='float', width=2),
     plaidml.DType.FLOAT32: DTypeInfo(base='float', width=4),
     plaidml.DType.FLOAT64: DTypeInfo(base='float', width=8),
+    plaidml.DType.CUSTOM: DTypeInfo(base='custom', width=4),
 }
 
 INFO_DTYPES = dict([[v, k] for k, v in DTYPE_INFOS.items()])
@@ -1223,6 +1224,8 @@ def common_dtype(*args):
             elif current.base == 'bool':
                 # Just use whatever we have so far; booleans can be coerced to anything.
                 pass
+            elif best.base == 'custom' or current.base == 'custom':
+                best = best if best.width > current.width else current
             elif best.base == 'float' or current.base == 'float':
                 # We're unifying some integer type with a float.  The float needs to be
                 # at least twice the size of the integer type, clamped to float64.

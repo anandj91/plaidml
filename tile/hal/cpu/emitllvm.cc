@@ -645,6 +645,7 @@ void Emit::Visit(const sem::LimitConst& n) {
       break;
     case DataType::INT128:
     case DataType::PRNG:
+    case DataType::CUSTOM:
     case DataType::INVALID:
       throw Error("Unknown type has no constants");
   }
