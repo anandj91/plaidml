@@ -177,7 +177,7 @@ __local custom mul_custom(custom a, custom b) {\n\
   custom c;\n\
   c.f = a.f * b.f;\n\
   return c;\n\
-}\n\";
+}\n";
   //ki.kfunc->Accept(emulator);
 }
 
