@@ -37,10 +37,12 @@ unsigned Rank(sem::Type ty) {
       return 10;
     case DataType::FLOAT16:
       return 11;
-    case DataType::FLOAT32:
+    case DataType::CUSTOM:
       return 12;
-    case DataType::FLOAT64:
+    case DataType::FLOAT32:
       return 13;
+    case DataType::FLOAT64:
+      return 14;
     default:
       throw std::logic_error{"Invalid type found in typecheck"};
   }

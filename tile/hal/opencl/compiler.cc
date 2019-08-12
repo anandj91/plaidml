@@ -18,6 +18,7 @@
 #include "base/util/logging.h"
 #include "base/util/uuid.h"
 #include "tile/hal/opencl/cl_opt.h"
+#include "tile/hal/opencl/cl_emu.h"
 #include "tile/hal/opencl/emitocl.h"
 #include "tile/hal/opencl/library.h"
 #include "tile/lang/semprinter.h"
@@ -207,11 +208,12 @@ boost::future<std::unique_ptr<hal::Library>> Compiler::Build(const context::Cont
       kinfo.set_src("// Builtin zero kernel");
     } else if (!knames.count(ki.kfunc->name)) {
       knames.insert(ki.kfunc->name);
-      OptimizeKernel(ki, cl_khr_fp16, settings);
+      //OptimizeKernel(ki, cl_khr_fp16, settings);
+      auto header = EmulateType(ki, {DataType::CUSTOM}, cl_khr_fp16, settings);
 
       Emit ocl{cl_khr_fp16, cl_khr_fp64};
       ocl.Visit(*ki.kfunc);
-      std::string src = ki.comments + ocl.str();
+      std::string src = ki.comments + header + ocl.str();
 
       if (is_directory(cache_dir)) {
         fs::path src_path = (cache_dir / ki.kname).replace_extension("cl");

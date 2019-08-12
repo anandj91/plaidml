@@ -25,6 +25,8 @@ plaidml_cc_library(
         "cl_mem_buffer.h",
         "cl_opt.cc",
         "cl_opt.h",
+        "cl_emu.cc",
+        "cl_emu.h",
         "compiler.cc",
         "compiler.h",
         "compute_kernel.cc",
