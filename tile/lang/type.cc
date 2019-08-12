@@ -651,7 +651,9 @@ void TypeCheck(Program* prog, Bindings* vars) {
             default:
               throw std::runtime_error("UInt width must be 8, 16, 32, or 64");
           }
-        }
+        } else if ("custom" == typefamily) {
+	  out_type = DataType::CUSTOM;
+	}
         // compute out_type from the function name and possibly inputs[1]
         std::vector<size_t> out_shape;
         for (size_t i = 0; i < val.shape.dims.size(); ++i) {

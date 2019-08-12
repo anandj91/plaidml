@@ -152,9 +152,32 @@ class TypeEmulator : public sem::Visitor {
 
 std::string EmulateType(const lang::KernelInfo& ki, std::vector<DataType> types, bool cl_khr_fp16, const hal::proto::HardwareSettings& settings) {
   TypeEmulator emulator(types, cl_khr_fp16, settings);
-  return "\n \
-	  typedef float custom;\n \
-  ";
+  return "\n\
+typedef struct {\n\
+  float f;\n\
+} custom;\n\
+\n\
+__local custom as_custom(float a, float b) {\n\
+  return a;\n\
+}\n\
+\n\
+__local custom add_custom(custom a, custom b) {\n\
+  custom c;\n\
+  c.f = a.f + b.f;\n\
+  return c;\n\
+}\n\
+\n\
+__local custom scale_custom(custom a, float b) {\n\
+  custom c;\n\
+  c.f = a.f * b.f;\n\
+  return c;\n\
+}\n\
+\n\
+__local custom mul_custom(custom a, custom b) {\n\
+  custom c;\n\
+  c.f = a.f * b.f;\n\
+  return c;\n\
+}\n\";
   //ki.kfunc->Accept(emulator);
 }
 
