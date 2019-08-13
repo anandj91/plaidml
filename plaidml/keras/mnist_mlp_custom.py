@@ -66,10 +66,14 @@ def load_data():
 
 def build_model(use_batch_normalization=False, use_dropout=False):
     model = Sequential()
-    d = Dense(10, input_shape=(784,))
+    c = Cast("custom")
+    model.add(c)
+    d = Dense(10, input_shape=(784,), dtype="custom")
     model.add(d)
-    a = Activation('softmax')
+    a = Activation('softmax', dtype="custom")
     model.add(a)
+    cb = Cast("float32")
+    model.add(cb)
 
     return model
 
@@ -94,4 +98,5 @@ def run(use_batch_normalization=False, use_dropout=False):
 
 if __name__ == '__main__':
     plaidml._internal_set_vlog(4)
+    #plaidml.set_floatx(ptile.convert_np_dtype_to_pml("custom"))
     run()

@@ -1,13 +1,29 @@
 from __future__ import print_function
+import sys
 import plaidml.keras
 plaidml.keras.install_backend()
-import plaidml.keras.backend
+import plaidml.keras.backend as K
+import plaidml
+import plaidml.tile as ptile
+#plaidml._internal_set_vlog(4)
+#plaidml.set_floatx(ptile.convert_np_dtype_to_pml("custom"))
 
 from keras.models import Sequential
 from keras import layers
 import numpy as np
 from six.moves import range
 
+from keras.layers import Layer
+
+class Cast(Layer):
+    def __init__(self, dtype, **kwargs):
+        self.dtype = dtype
+        super(Cast, self).__init__(**kwargs)
+
+    def call(self, x): 
+        r = K.cast(x, self.dtype)
+        print('cast', r)
+        return r
 
 class CharacterTable(object):
     """Given a set of characters:
@@ -134,29 +150,30 @@ LAYERS = 1
 
 print('Build model...')
 model = Sequential()
+#model.add(Cast("custom"))
 # "Encode" the input sequence using an RNN, producing an output of HIDDEN_SIZE.
 # Note: In a situation where your input sequences have a variable length,
 # use input_shape=(None, num_feature).
-model.add(RNN(HIDDEN_SIZE, input_shape=(MAXLEN, len(chars))))
+model.add(RNN(HIDDEN_SIZE, input_shape=(MAXLEN, len(chars)), dtype="custom"))
 # As the decoder RNN's input, repeatedly provide with the last output of
 # RNN for each time step. Repeat 'DIGITS + 1' times as that's the maximum
 # length of output, e.g., when DIGITS=3, max output is 999+999=1998.
-model.add(layers.RepeatVector(DIGITS + 1))
+model.add(layers.RepeatVector(DIGITS + 1, dtype="custom"))
 # The decoder RNN could be multiple layers stacked or a single layer.
 for _ in range(LAYERS):
     # By setting return_sequences to True, return not only the last output but
     # all the outputs so far in the form of (num_samples, timesteps,
     # output_dim). This is necessary as TimeDistributed in the below expects
     # the first dimension to be the timesteps.
-    model.add(RNN(HIDDEN_SIZE, return_sequences=True))
+    model.add(RNN(HIDDEN_SIZE, return_sequences=True, dtype="custom"))
 
 # Apply a dense layer to the every temporal slice of an input. For each of step
 # of the output sequence, decide which character should be chosen.
-model.add(layers.TimeDistributed(layers.Dense(len(chars), activation='softmax')))
+model.add(layers.TimeDistributed(layers.Dense(len(chars), activation='softmax', dtype="custom"), dtype="custom"))
+#model.add(Cast("float32"))
 model.compile(loss='categorical_crossentropy',
               optimizer='adam',
               metrics=['accuracy'])
-model.summary()
 
 # Train the model each generation and show predictions against the validation
 # dataset.

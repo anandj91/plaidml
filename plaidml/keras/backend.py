@@ -1652,7 +1652,8 @@ def variable(value, dtype=None, name=None, constraint=None):
             _prepend_name_scope(name,
                                 'float_variable' if isinstance(value, float) else 'int_variable'))
     elif isinstance(value, ptile.Value):
-        func = ptile.compose(_ctx, _device(), [], [('out', value)], name='variable')
+        v = op.cast(value, plaidml.DType.CUSTOM)
+        func = ptile.compose(_ctx, _device(), [], [('out', v)], name='variable')
         invoker = plaidml.Invoker(_ctx, func)
         shape = invoker.get_output_shape('out')
         tensor = plaidml.Tensor(_device(), shape)
