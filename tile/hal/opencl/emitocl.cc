@@ -375,6 +375,7 @@ void Emit::EmitWithWidthConversion(const sem::Type& from, const sem::Type& to, c
     case DataType::INT32:
     case DataType::UINT32:
     case DataType::FLOAT32:
+    case DataType::CUSTOM:
       condition_type.dtype = DataType::INT32;
       break;
     case DataType::INT64:

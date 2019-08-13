@@ -151,6 +151,7 @@ class TypeEmulator : public sem::Visitor {
 }  // namespace
 
 std::string GetHeader() {
+/*
   return "\n\
 typedef struct {\n\
   float f;\n\
@@ -189,6 +190,14 @@ __local custom mul_custom(custom a, custom b) {\n\
   c.f = a.f * b.f;\n\
   return c;\n\
 }\n";
+*/
+  return "\ntypedef float custom;\n\
+#define CUSTOM_MAX FLT_MAX\n\
+\n\
+__local custom as_custom(float a, float b) {\n\
+  return (custom)a;\n\
+}\n\
+\n";
 }
 
 void EmulateType(const lang::KernelInfo& ki, std::vector<DataType> types, bool cl_khr_fp16, const hal::proto::HardwareSettings& settings) {

@@ -214,6 +214,8 @@ static std::map<std::pair<DataType, LimitConst::Which>, std::string> LimitConstL
     {{DataType::UINT16, LimitConst::MAX}, "USHRT_MAX"}, {{DataType::UINT32, LimitConst::MAX}, "UINT_MAX"},
     {{DataType::UINT64, LimitConst::MAX}, "ULONG_MAX"}, {{DataType::FLOAT16, LimitConst::MAX}, "0x1.ffcp15h"},
     {{DataType::FLOAT32, LimitConst::MAX}, "FLT_MAX"},  {{DataType::FLOAT64, LimitConst::MAX}, "DBL_MAX"},
+
+    {{DataType::CUSTOM, LimitConst::MIN}, "-CUSTOM_MAX"},  {{DataType::CUSTOM, LimitConst::MAX}, "CUSTOM_MAX"},
 };
 
 void Print::Visit(const LimitConst& n) {
