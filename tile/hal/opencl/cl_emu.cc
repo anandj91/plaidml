@@ -150,15 +150,22 @@ class TypeEmulator : public sem::Visitor {
 
 }  // namespace
 
-std::string EmulateType(const lang::KernelInfo& ki, std::vector<DataType> types, bool cl_khr_fp16, const hal::proto::HardwareSettings& settings) {
-  TypeEmulator emulator(types, cl_khr_fp16, settings);
+std::string GetHeader() {
   return "\n\
 typedef struct {\n\
   float f;\n\
 } custom;\n\
 \n\
 __local custom as_custom(float a, float b) {\n\
-  return a;\n\
+  custom c;\n\
+  c.f = a;\n\
+  return c;\n\
+}\n\
+\n\
+__local custom as_custom(float a) {\n\
+  custom c;\n\
+  c.f = a;\n\
+  return c;\n\
 }\n\
 \n\
 __local custom add_custom(custom a, custom b) {\n\
@@ -167,10 +174,14 @@ __local custom add_custom(custom a, custom b) {\n\
   return c;\n\
 }\n\
 \n\
-__local custom scale_custom(custom a, float b) {\n\
+__local custom scale_custom(custom a, float s) {\n\
   custom c;\n\
-  c.f = a.f * b.f;\n\
+  c.f = a.f * s;\n\
   return c;\n\
+}\n\
+\n\
+__local float __OVERLOADABLE__ as_float(custom a, float b) {\n\
+  return a.f;\n\
 }\n\
 \n\
 __local custom mul_custom(custom a, custom b) {\n\
@@ -178,7 +189,11 @@ __local custom mul_custom(custom a, custom b) {\n\
   c.f = a.f * b.f;\n\
   return c;\n\
 }\n";
-  //ki.kfunc->Accept(emulator);
+}
+
+void EmulateType(const lang::KernelInfo& ki, std::vector<DataType> types, bool cl_khr_fp16, const hal::proto::HardwareSettings& settings) {
+  TypeEmulator emulator(types, cl_khr_fp16, settings);
+  ki.kfunc->Accept(emulator);
 }
 
 }  // namespace opencl

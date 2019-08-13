@@ -190,6 +190,8 @@ boost::future<std::unique_ptr<hal::Library>> Compiler::Build(const context::Cont
     code << k_subgroup_microkernels;
   }
 
+  code << GetHeader();
+
   auto env_cache = env::Get("PLAIDML_OPENCL_CACHE");
   fs::path cache_dir;
   if (env_cache.length()) {
@@ -209,11 +211,11 @@ boost::future<std::unique_ptr<hal::Library>> Compiler::Build(const context::Cont
     } else if (!knames.count(ki.kfunc->name)) {
       knames.insert(ki.kfunc->name);
       //OptimizeKernel(ki, cl_khr_fp16, settings);
-      auto header = EmulateType(ki, {DataType::CUSTOM}, cl_khr_fp16, settings);
+      //EmulateType(ki, {DataType::CUSTOM}, cl_khr_fp16, settings);
 
       Emit ocl{cl_khr_fp16, cl_khr_fp64};
       ocl.Visit(*ki.kfunc);
-      std::string src = ki.comments + header + ocl.str();
+      std::string src = ki.comments + ocl.str();
 
       if (is_directory(cache_dir)) {
         fs::path src_path = (cache_dir / ki.kname).replace_extension("cl");
