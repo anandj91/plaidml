@@ -157,7 +157,7 @@ void Emit::Visit(const sem::BinaryExpr& n) {
   emit("(");
   EmitWithTypeConversion(ty_lhs, ty, n.lhs);
   emit(" ");
-  if (ty.dtype == DataType::FLOAT32) {
+  if (ty.base == sem::Type::VALUE && ty.dtype == DataType::FLOAT32) {
     emit(",");
   } else {
     emit(n.op);
