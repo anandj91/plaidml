@@ -102,7 +102,9 @@ void Emit::Visit(const sem::DeclareStmt& n) {
     if (n.type.array) {
       emit("{");
       for (size_t i = 0; i < n.type.array; i++) {
+        emit("as_custom(");
         n.init->Accept(*this);
+        emit(")");
         emit(", ");
       }
       emit("}");
@@ -115,14 +117,51 @@ void Emit::Visit(const sem::DeclareStmt& n) {
   scope_->Bind(n.name, ty);
 }
 
+void Emit::Visit(const sem::UnaryExpr& n) {
+  static std::map<std::string, std::string> un_ops = { 
+      {"+", "add"},     {"-", "neg"},    {"*", "mul"},     {"/", "div"},       {"==", "cmp_eq"},
+  };  
+  auto ty = TypeOf(n.inner);
+  if (ty.dtype == DataType::FLOAT32) {
+    if (un_ops.count(n.op)) {
+      emit("custom_" + un_ops.at(n.op));
+    } else {
+      emit("custom_" + n.op);
+    }
+  }
+  emit("(");
+  if (ty.dtype != DataType::FLOAT32) {
+    emit(n.op);
+  }
+  n.inner->Accept(*this);
+  emit(")");
+}
+
 void Emit::Visit(const sem::BinaryExpr& n) {
+  static std::map<std::string, std::string> bin_ops = { 
+      {"+", "add"},     {"-", "sub"},    {"*", "mul"},     {"/", "div"},       {"==", "cmp_eq"},
+      {"!=", "cmp_ne"}, {"<", "cmp_lt"}, {">", "cmp_gt"},  {"<=", "cmp_le"},   {">=", "cmp_ge"},
+      {"&", "bit_and"}, {"|", "bit_or"}, {"^", "bit_xor"}, {"<<", "bit_left"}, {">>", "bit_right"},
+  };  
+
   auto ty_lhs = TypeOf(n.lhs);
   auto ty_rhs = TypeOf(n.rhs);
   auto ty = lang::Promote({ty_lhs, ty_rhs});
+  if (ty.base == sem::Type::VALUE && ty.dtype == DataType::FLOAT32) {
+    if (bin_ops.count(n.op)) {
+      emit("custom_" + bin_ops.at(n.op));
+    } else {
+      emit("custom_" + n.op);
+    }
+  }
   emit("(");
   EmitWithTypeConversion(ty_lhs, ty, n.lhs);
   emit(" ");
-  emit(n.op);
+  if (ty.dtype == DataType::FLOAT32) {
+    emit(",");
+  } else {
+    emit(n.op);
+  }
   emit(" ");
   EmitWithTypeConversion(ty_rhs, ty, n.rhs);
   emit(")");
@@ -335,6 +374,21 @@ void Emit::EmitWithTypeConversion(const sem::Type& from, const sem::Type& to, co
        (from.base == to.base && from.dtype == to.dtype))) {
     // No conversion required.
     expr->Accept(*this);
+    return;
+  }
+  if (to.dtype == DataType::FLOAT32) {
+    emit("as_custom");
+    emit("(");
+    expr->Accept(*this);
+    emit(")");
+    return;
+  }
+  if (from.dtype == DataType::FLOAT32) {
+    emit("convert_");
+    EmitC::emitType(to);
+    emit("(");
+    expr->Accept(*this);
+    emit(")");
     return;
   }
   if (from.base == sem::Type::INDEX || (from.base == sem::Type::VALUE && from.vec_width == 1)) {

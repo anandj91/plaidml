@@ -41,7 +41,7 @@ inline std::string c_dtype(const DataType& dt) {
       base = "half";
       break;
     case DataType::FLOAT32:
-      base = "float";
+      base = "custom";
       break;
     case DataType::FLOAT64:
       base = "double";
@@ -76,7 +76,9 @@ void EmitC::Visit(const sem::FloatConst& n) {
   if (c.find_first_of(".e") == std::string::npos) {
     c += ".0";
   }
+  emit("as_custom(");
   emit(c + "f");
+  emit(")");
 }
 
 void EmitC::Visit(const sem::LookupLVal& n) { emit(n.name); }
@@ -217,7 +219,13 @@ void EmitC::Visit(const sem::LimitConst& n) {
   if (it == LimitConstLookup.end()) {
     throw std::runtime_error("Invalid type in LimitConst");
   }
+  if (n.type == DataType::FLOAT32) {
+    emit("as_custom(");
+  }
   emit(it->second);
+  if (n.type == DataType::FLOAT32) {
+    emit(")");
+  }
 }
 
 void EmitC::Visit(const sem::IndexExpr& n) { throw std::runtime_error("IndexExpr unimplemented in EmitC"); }
