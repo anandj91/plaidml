@@ -236,6 +236,9 @@ boost::future<std::unique_ptr<hal::Library>> Compiler::Build(const context::Cont
   code << "__local uint __OVERLOADABLE__ convert_uint(custom a) {\n";
   code << "  return (uint)a.f;\n";
   code << "}\n";
+  code << "__local int __OVERLOADABLE__ convert_int(custom a) {\n";
+  code << "  return (int)a.f;\n";
+  code << "}\n";
   code << "__local int __OVERLOADABLE__ custom_cmp_eq(custom a, custom b) {\n";
   code << "  return (int)(a.f == b.f);\n";
   code << "}\n";
@@ -271,6 +274,21 @@ boost::future<std::unique_ptr<hal::Library>> Compiler::Build(const context::Cont
   code << "__local custom __OVERLOADABLE__ native_sqrt(custom a) {\n";
   code << "  custom c;\n";
   code << "  c.f = native_sqrt(a.f);\n";
+  code << "  return c;\n";
+  code << "}\n";
+  code << "__local custom __OVERLOADABLE__ tanh(custom a) {\n";
+  code << "  custom c;\n";
+  code << "  c.f = tanh(a.f);\n";
+  code << "  return c;\n";
+  code << "}\n";
+  code << "__local custom __OVERLOADABLE__ pow(custom a, custom b) {\n";
+  code << "  custom c;\n";
+  code << "  c.f = pow(a.f, b.f);\n";
+  code << "  return c;\n";
+  code << "}\n";
+  code << "__local custom __OVERLOADABLE__ round(custom a) {\n";
+  code << "  custom c;\n";
+  code << "  c.f = round(a.f);\n";
   code << "  return c;\n";
   code << "}\n";
 
