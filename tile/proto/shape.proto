@@ -21,6 +21,7 @@ message TensorShape {
     FLOAT32 = 50;
     FLOAT64 = 51;
     PRNG = 64;
+    CUSTOM = 65;
   }
 
   message Dimension {
