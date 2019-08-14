@@ -116,13 +116,30 @@ void Emit::Visit(const sem::DeclareStmt& n) {
 }
 
 void Emit::Visit(const sem::BinaryExpr& n) {
+  static std::map<std::string, std::string> bin_ops = { 
+      {"+", "add"},     {"-", "sub"},    {"*", "mul"},     {"/", "div"},       {"==", "cmp_eq"},
+      {"!=", "cmp_ne"}, {"<", "cmp_lt"}, {">", "cmp_gt"},  {"<=", "cmp_le"},   {">=", "cmp_ge"},
+      {"&", "bit_and"}, {"|", "bit_or"}, {"^", "bit_xor"}, {"<<", "bit_left"}, {">>", "bit_right"},
+  };  
+
   auto ty_lhs = TypeOf(n.lhs);
   auto ty_rhs = TypeOf(n.rhs);
   auto ty = lang::Promote({ty_lhs, ty_rhs});
+  if (ty.dtype == DataType::CUSTOM) {
+    if (bin_ops.count(n.op)) {
+      emit("custom_" + bin_ops.at(n.op));
+    } else {
+      emit("custom_" + n.op);
+    }
+  }
   emit("(");
   EmitWithTypeConversion(ty_lhs, ty, n.lhs);
   emit(" ");
-  emit(n.op);
+  if (ty.dtype == DataType::CUSTOM) {
+    emit(",");
+  } else {
+    emit(n.op);
+  }
   emit(" ");
   EmitWithTypeConversion(ty_rhs, ty, n.rhs);
   emit(")");
@@ -337,6 +354,13 @@ void Emit::EmitWithTypeConversion(const sem::Type& from, const sem::Type& to, co
     expr->Accept(*this);
     return;
   }
+  if (to.dtype == DataType::CUSTOM) {
+    emit("as_custom");
+    emit("(");
+    expr->Accept(*this);
+    emit(")");
+    return;
+  }
   if (from.base == sem::Type::INDEX || (from.base == sem::Type::VALUE && from.vec_width == 1)) {
     emit("(");
     EmitC::emitType(to);
@@ -375,6 +399,7 @@ void Emit::EmitWithWidthConversion(const sem::Type& from, const sem::Type& to, c
     case DataType::INT32:
     case DataType::UINT32:
     case DataType::FLOAT32:
+    case DataType::CUSTOM:
       condition_type.dtype = DataType::INT32;
       break;
     case DataType::INT64:

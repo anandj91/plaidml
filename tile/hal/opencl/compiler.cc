@@ -197,6 +197,42 @@ boost::future<std::unique_ptr<hal::Library>> Compiler::Build(const context::Cont
   }
   std::set<std::string> knames;
 
+  code << "typedef float custom;\n";
+  code << "#define CUSTOM_MAX FLT_MAX\n";
+  code << "__local custom __OVERLOADABLE__ custom_mul(custom a, custom b) {\n";
+  code << "  return a * b;\n";
+  code << "}\n";
+  code << "__local custom __OVERLOADABLE__ custom_div(custom a, custom b) {\n";
+  code << "  return a/b;\n";
+  code << "}\n";
+  code << "__local custom __OVERLOADABLE__ custom_add(custom a, custom b) {\n";
+  code << "  return a + b;\n";
+  code << "}\n";
+  code << "__local custom __OVERLOADABLE__ custom_sub(custom a, custom b) {\n";
+  code << "  return (a - b);\n";
+  code << "}\n";
+  code << "__local custom __OVERLOADABLE__ as_uint(custom a, float b) {\n";
+  code << "  return as_uint(a);\n";
+  code << "}\n";
+  code << "__local custom __OVERLOADABLE__ as_custom(float a) {\n";
+  code << "  return (custom)a;\n";
+  code << "}\n";
+  code << "__local custom __OVERLOADABLE__ as_custom(float a, float b) {\n";
+  code << "  return (custom)a;\n";
+  code << "}\n";
+  code << "__local custom __OVERLOADABLE__ as_custom(custom t, custom f, int c) {\n";
+  code << "  return select(t, f, c);\n";
+  code << "}\n";
+  code << "__local int __OVERLOADABLE__ custom_cmp_eq(custom a, custom b) {\n";
+  code << "  return (int)(a == b);\n";
+  code << "}\n";
+  code << "__local int __OVERLOADABLE__ custom_cmp_gt(custom a, custom b) {\n";
+  code << "  return (int)(a > b);\n";
+  code << "}\n";
+  code << "__local int __OVERLOADABLE__ custom_cmp_lt(custom a, custom b) {\n";
+  code << "  return (int)(a < b);\n";
+  code << "}\n";
+
   for (const auto& ki : kernel_info) {
     context::Activity kbuild{activity.ctx(), "tile::hal::opencl::BuildKernel"};
 

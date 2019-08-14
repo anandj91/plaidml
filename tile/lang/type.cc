@@ -375,7 +375,7 @@ void TypeCheck(Program* prog, Bindings* vars) {
     } else if (op.tag == Op::FUNCTION && op.f.fn == "prng_state") {
       out_type = DataType::UINT32;
     } else if (op.tag == Op::FUNCTION && op.f.fn == "prng_value") {
-      out_type = DataType::FLOAT32;
+      out_type = DataType::CUSTOM;
     } else if (op.tag == Op::FUNCTION && op.f.fn == "quantize") {
       out_type = DataType::INT8;
     } else {
@@ -589,7 +589,7 @@ void TypeCheck(Program* prog, Bindings* vars) {
         if (op.f.fn == "prng_state") {
           vars->emplace(op.output, Binding(SimpleShape(DataType::UINT32, {3, k_rng_size})));
         } else {
-          vars->emplace(op.output, Binding(TensorShape(DataType::FLOAT32, prng_shape.dims)));
+          vars->emplace(op.output, Binding(TensorShape(DataType::CUSTOM, prng_shape.dims)));
         }
         continue;
       }
