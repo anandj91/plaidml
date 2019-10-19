@@ -203,7 +203,9 @@ boost::future<std::unique_ptr<hal::Library>> Compiler::Build(const context::Cont
   code << "#define CUSTOM_MAX as_custom(FLT_MAX)\n";
   code << "#define CUSTOM_MIN as_custom(FLT_MIN)\n";
   code << "__local custom __OVERLOADABLE__ as_custom(float a, int b) {\n";
-  code << "  return (custom){a};\n";
+  code << "  custom c;\n";
+  code << "  vstore_half(a, 0, (half*)&c.d);\n";
+  code << "  return c;\n";
   code << "}\n";
   code << "__local custom __OVERLOADABLE__ as_custom(float a) {\n";
   code << "  return as_custom(a, 32);\n";
@@ -218,7 +220,7 @@ boost::future<std::unique_ptr<hal::Library>> Compiler::Build(const context::Cont
   code << "  return a;\n";
   code << "}\n";
   code << "__local float __OVERLOADABLE__ as_float(custom a) {\n";
-  code << "  return a.d;\n";
+  code << "  return vload_half(0, (half*)&a.d);\n";
   code << "}\n";
   code << "__local uint __OVERLOADABLE__ as_uint(custom a) {\n";
   code << "  return as_uint(as_float(a));\n";
