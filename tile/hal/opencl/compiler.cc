@@ -198,12 +198,37 @@ boost::future<std::unique_ptr<hal::Library>> Compiler::Build(const context::Cont
   std::set<std::string> knames;
 
   code << "typedef struct {\n";
-  code << "  float d;\n";
+  code << "  unsigned int d;\n";
   code << "} custom;\n";
+
   code << "#define CUSTOM_MAX as_custom(FLT_MAX)\n";
   code << "#define CUSTOM_MIN as_custom(FLT_MIN)\n";
+
+  code << "#define FPS_SIZE 1\n";
+  code << "#define FPS_SHIFT (32 - FPS_SIZE)\n";
+  code << "#define FPS_MASK 0x00000001\n";
+  code << "#define FPI_SIZE 8\n";
+  code << "#define FPI_SHIFT (FPS_SHIFT - FPI_SIZE)\n";
+  code << "#define FPI_MASK ~((~0x00000000) << FPI_SIZE)\n";
+  code << "#define FPF_SIZE 23\n";
+  code << "#define FPF_SHIFT (FPS_SIZE + FPI_SIZE)\n";
+  code << "#define FPF_MASK ((~0x00000000) << (32 - FPF_SIZE))\n";
+
   code << "__local custom __OVERLOADABLE__ as_custom(float a, int b) {\n";
-  code << "  return (custom){a};\n";
+  code << "  custom c;\n";
+  code << "  unsigned int s = (a < 0);\n";
+  code << "  a = s ? -a : a;\n";
+  code << "  unsigned int i = (unsigned int) a;\n";
+  code << "  unsigned int f = (unsigned int) ((a - i) * pow((float)2, (float) 31));\n";
+  code << "  c.d = ((s & FPS_MASK) << FPS_SHIFT) | ((i & FPI_MASK) << FPI_SHIFT) | ((f & FPF_MASK) >> FPF_SHIFT);\n";
+  code << "  return c;\n";
+  code << "}\n";
+  code << "__local float __OVERLOADABLE__ as_float(custom a) {\n";
+  code << "  unsigned int s = ((a.d >> FPS_SHIFT) & FPS_MASK);\n";
+  code << "  unsigned int i = ((a.d >> FPI_SHIFT) & FPI_MASK);\n";
+  code << "  unsigned int f = ((a.d << FPF_SHIFT) & FPF_MASK);\n";
+  code << "  float res = i + f * pow((float)2, (float)-31);\n";
+  code << "  return s ? -res : res;\n";
   code << "}\n";
   code << "__local custom __OVERLOADABLE__ as_custom(float a) {\n";
   code << "  return as_custom(a, 32);\n";
@@ -216,9 +241,6 @@ boost::future<std::unique_ptr<hal::Library>> Compiler::Build(const context::Cont
   code << "}\n";
   code << "__local custom __OVERLOADABLE__ as_custom(custom a, int b) {\n";
   code << "  return a;\n";
-  code << "}\n";
-  code << "__local float __OVERLOADABLE__ as_float(custom a) {\n";
-  code << "  return a.d;\n";
   code << "}\n";
   code << "__local uint __OVERLOADABLE__ as_uint(custom a) {\n";
   code << "  return as_uint(as_float(a));\n";
