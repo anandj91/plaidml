@@ -146,8 +146,25 @@ void Emit::Visit(const sem::DeclareStmt& n) {
 }
 
 void Emit::Visit(const sem::UnaryExpr& n) {
-  value inner = Eval(n.inner);
   using fnv1a64::hashlit;
+  uint64_t ophash = fnv1a64::hash(n.op.c_str());
+  std::string name;
+  bool flag = true;
+  switch (ophash) {
+    case hashlit("-"):
+      name = "_neg";
+      break;
+    default:
+      flag = false;
+  }
+
+  if (flag) {
+    sem::CallExpr call(name, std::vector<sem::ExprPtr>{n.inner});
+    Emit::Visit(call);
+    return;
+  }
+
+  value inner = Eval(n.inner);
   switch (fnv1a64::hash(n.op.c_str())) {
     case hashlit("!"):
       Resolve(value{builder_.CreateNot(inner.v), inner.t});
@@ -164,6 +181,33 @@ void Emit::Visit(const sem::UnaryExpr& n) {
 }
 
 void Emit::Visit(const sem::BinaryExpr& n) {
+  uint64_t ophash = fnv1a64::hash(n.op.c_str());
+  using fnv1a64::hashlit;
+  std::string name;
+  bool flag = true;
+  switch (ophash) {
+      case hashlit("+"):
+          name = "_add";
+          break;
+      case hashlit("-"):
+          name = "_sub";
+          break;
+      case hashlit("*"):
+          name = "_mul";
+          break;
+      case hashlit("/"):
+          name = "_div";
+          break;
+      default:
+          flag = false;
+  }
+
+  if (flag) {
+    sem::CallExpr call(name, std::vector<sem::ExprPtr>{n.lhs, n.rhs});
+    Emit::Visit(call);
+    return;
+  }
+
   value lhs = Eval(n.lhs);
   value rhs = Eval(n.rhs);
 
@@ -176,8 +220,6 @@ void Emit::Visit(const sem::BinaryExpr& n) {
 
   // Create the instruction that represents this operator, which depends on
   // whether our operands are floats, signed ints, or unsigned ints.
-  uint64_t ophash = fnv1a64::hash(n.op.c_str());
-  using fnv1a64::hashlit;
   if (IsFloatingPointType(comtype)) {
     switch (ophash) {
       case hashlit("+"):
@@ -436,7 +478,7 @@ void Emit::Visit(const sem::CallExpr& n) {
   // have the same type, which is 'double' by default, and the result will have
   // the same type. If one or more of the arguments are vectors, we will convert
   // non-vector arguments up to the vector size.
-  sem::Type gentype{sem::Type::VALUE, DataType::FLOAT64};
+  sem::Type gentype{sem::Type::VALUE, DataType::FLOAT32};
   std::string typefix = ".";
   std::vector<value> vals;
   for (auto& expr : n.vals) {
@@ -447,7 +489,7 @@ void Emit::Visit(const sem::CallExpr& n) {
     }
     vals.push_back(val);
   }
-  typefix += "f64";
+  typefix += "f32";
   // Cast each argument value to the common type used for this call. This may
   // require vector-expansion.
   std::vector<llvm::Value*> args;
@@ -483,6 +525,12 @@ void Emit::Visit(const sem::CallExpr& n) {
       linkName = n.name;
       devectorize = true;
       break;
+    case sem::CallExpr::Function::OTH:
+      linkName = n.name;
+      devectorize = true;
+      break;
+    default:
+      linkName = n.name;
   }
   // Find a reference to that builtin function, or generate a reference if this
   // is the first time we've called it.

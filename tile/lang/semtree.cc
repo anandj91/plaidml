@@ -77,6 +77,8 @@ CallExpr::CallExpr(Function f, const std::vector<ExprPtr>& v) : function(f), val
   name = names.at(f);
 }
 
+CallExpr::CallExpr(std::string name, const std::vector<ExprPtr>& v) : function(Function::OTH), name(name), vals(v) {}
+
 CallExpr::CallExpr(ExprPtr f, const std::vector<ExprPtr>& v) : vals(v) {
   // The historical concept of CallExpr allowed for the concept of a function
   // pointer, and the semtree builder therefore constructs CallExpr using an
