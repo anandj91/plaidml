@@ -940,6 +940,7 @@ llvm::Type* Compiler::CType(DataType type) {
       return builder_.getFloatTy();
     case DataType::FLOAT64:
       return builder_.getDoubleTy();
+    case DataType::CUSTOM:
     case DataType::INT128:
     case DataType::PRNG:
     case DataType::INVALID:

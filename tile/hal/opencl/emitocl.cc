@@ -102,7 +102,7 @@ void Emit::Visit(const sem::DeclareStmt& n) {
     if (n.type.array) {
       emit("{");
       for (size_t i = 0; i < n.type.array; i++) {
-        n.init->Accept(*this);
+        EmitWithTypeConversion(init_type, ty, n.init);
         emit(", ");
       }
       emit("}");
@@ -115,14 +115,59 @@ void Emit::Visit(const sem::DeclareStmt& n) {
   scope_->Bind(n.name, ty);
 }
 
+void Emit::Visit(const sem::UnaryExpr& n) {
+  auto ty = TypeOf(n.inner);
+  bool flag = true;
+  if (ty.dtype == DataType::CUSTOM) {
+    flag = false;
+    if (n.op == "-") {
+      emit("neg");
+    } else {
+      flag = true;
+    }
+  }
+  emit("(");
+  if (flag) {
+    emit(n.op);
+  }
+  n.inner->Accept(*this);
+  emit(")");
+
+}
+
 void Emit::Visit(const sem::BinaryExpr& n) {
   auto ty_lhs = TypeOf(n.lhs);
   auto ty_rhs = TypeOf(n.rhs);
   auto ty = lang::Promote({ty_lhs, ty_rhs});
+  bool flag = true;
+  if (ty.dtype == DataType::CUSTOM) {
+    flag = false;
+    if (n.op == "*") {
+      emit("mul");
+    } else if (n.op == "+") {
+      emit("add");
+    } else if (n.op == "-") {
+      emit("sub");
+    } else if (n.op == "/") {
+      emit("div");
+    } else if (n.op == "<") {
+      emit("le");
+    } else if (n.op == ">") {
+      emit("ge");
+    } else if (n.op == "==") {
+      emit("eq");
+    } else {
+      flag = true;
+    }
+  }
   emit("(");
   EmitWithTypeConversion(ty_lhs, ty, n.lhs);
   emit(" ");
-  emit(n.op);
+  if (flag) {
+    emit(n.op);
+  } else {
+    emit(",");
+  }
   emit(" ");
   EmitWithTypeConversion(ty_rhs, ty, n.rhs);
   emit(")");
@@ -338,10 +383,18 @@ void Emit::EmitWithTypeConversion(const sem::Type& from, const sem::Type& to, co
     return;
   }
   if (from.base == sem::Type::INDEX || (from.base == sem::Type::VALUE && from.vec_width == 1)) {
-    emit("(");
-    EmitC::emitType(to);
-    emit(")");
-    expr->Accept(*this);
+    if (to.dtype == DataType::CUSTOM || from.dtype == DataType::CUSTOM) {
+      emit("as_");
+      EmitC::emitType(to);
+      emit("(");
+      expr->Accept(*this);
+      emit(")");
+    } else {
+      emit("(");
+      EmitC::emitType(to);
+      emit(")");
+      expr->Accept(*this);
+    }
     return;
   }
   emit("convert_");

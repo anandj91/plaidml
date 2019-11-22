@@ -251,6 +251,8 @@ float softmax(float x) {
         return "float";
       case DataType::FLOAT64:
         return "double";
+      case DataType::CUSTOM:
+        return "custom";
       default:
         throw std::runtime_error("Invalid tile type");
     }

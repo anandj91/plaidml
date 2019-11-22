@@ -43,6 +43,8 @@ inline std::string c_dtype(const DataType& dt) {
       return "unsigned long long";
     case DataType::FLOAT64:
       return "double";
+    case DataType::CUSTOM:
+      return "custom";
     default:
       throw std::runtime_error("Invalid tile type");
   }

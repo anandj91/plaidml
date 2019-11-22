@@ -46,6 +46,9 @@ inline std::string c_dtype(const DataType& dt) {
     case DataType::FLOAT64:
       base = "double";
       break;
+    case DataType::CUSTOM:
+      base = "custom";
+      break;
     default:
       throw std::runtime_error("Invalid tile type");
   }
@@ -203,6 +206,8 @@ static std::map<std::pair<DataType, sem::LimitConst::Which>, std::string> LimitC
     {{DataType::UINT16, sem::LimitConst::MAX}, "USHRT_MAX"}, {{DataType::UINT32, sem::LimitConst::MAX}, "UINT_MAX"},
     {{DataType::UINT64, sem::LimitConst::MAX}, "ULONG_MAX"}, {{DataType::FLOAT16, sem::LimitConst::MAX}, "65504"},
     {{DataType::FLOAT32, sem::LimitConst::MAX}, "FLT_MAX"},  {{DataType::FLOAT64, sem::LimitConst::MAX}, "DBL_MAX"},
+
+    {{DataType::CUSTOM, sem::LimitConst::MAX}, "CUSTOM_MAX"},  {{DataType::CUSTOM, sem::LimitConst::MIN}, "CUSTOM_MIN"},
 };
 
 void EmitC::Visit(const sem::LimitConst& n) {

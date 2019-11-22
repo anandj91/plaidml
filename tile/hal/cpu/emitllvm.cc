@@ -643,6 +643,7 @@ void Emit::Visit(const sem::LimitConst& n) {
     case DataType::FLOAT64:
       LimitConstFP(builder_.getDoubleTy(), n.which);
       break;
+    case DataType::CUSTOM:
     case DataType::INT128:
     case DataType::PRNG:
     case DataType::INVALID:

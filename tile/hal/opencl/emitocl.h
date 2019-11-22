@@ -22,6 +22,7 @@ class Emit : public lang::EmitC {
   void Visit(const sem::StoreStmt&) final;
   void Visit(const sem::DeclareStmt&) final;
   void Visit(const sem::BinaryExpr&) final;
+  void Visit(const sem::UnaryExpr&) final;
   void Visit(const sem::CondExpr& n) final;
   void Visit(const sem::SelectExpr& n) final;
   void Visit(const sem::ClampExpr& n) final;
