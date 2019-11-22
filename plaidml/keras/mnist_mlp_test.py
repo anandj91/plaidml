@@ -16,21 +16,36 @@ import sys
 
 import plaidml.keras
 plaidml.keras.install_backend()
-import plaidml.keras.backend
+import plaidml.keras.backend as K
 
 import numpy as np
 np.random.seed(47)  # for reproducibility
 
 from keras.datasets import mnist
 from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, Activation
+from keras.layers import Dense, Dropout, Activation, Layer
 from keras.layers.normalization import BatchNormalization
 from keras.optimizers import SGD, Adam, RMSprop
 from keras.utils import np_utils
 
+#plaidml._internal_set_vlog(4)
+
+base_type = plaidml.DType.FLOAT32
+new_type = plaidml.DType.CUSTOM
+
+class Cast(Layer):
+    def __init__(self, **kwargs):
+        super(Cast, self).__init__(**kwargs)
+
+    def build(self, input_shape):
+        super(Cast, self).build(input_shape)
+
+    def call(self, x):
+        return K.cast(x, self.dtype)
+
 
 def load_data():
-    integration_test_limit = 20000
+    integration_test_limit = 128
     nb_classes = 10
     # the data, shuffled and split between train and test sets
     (X_train, y_train), (X_test, y_test) = mnist.load_data()
@@ -53,20 +68,22 @@ def load_data():
 
 def build_model(use_batch_normalization=False, use_dropout=False):
     model = Sequential()
-    model.add(Dense(128, input_shape=(784,)))
-    model.add(Activation('relu'))
+    model.add(Cast(input_shape=(784,), dtype=new_type))
+    model.add(Dense(128, input_shape=(784,), dtype=new_type))
+    model.add(Activation('relu', dtype=new_type))
     if use_batch_normalization:
-        model.add(BatchNormalization())
+        model.add(BatchNormalization(dtype=new_type))
     if use_dropout:
-        model.add(Dropout(0.2))
-    model.add(Dense(128))
-    model.add(Activation('relu'))
+        model.add(Dropout(0.2, dtype=new_type))
+    model.add(Dense(128, dtype=new_type))
+    model.add(Activation('relu', dtype=new_type))
     if use_batch_normalization:
-        model.add(BatchNormalization())
+        model.add(BatchNormalization(dtype=new_type))
     if use_dropout:
-        model.add(Dropout(0.2))
-    model.add(Dense(10))
-    model.add(Activation('softmax'))
+        model.add(Dropout(0.2, dtype=new_type))
+    model.add(Dense(10, dtype=new_type))
+    model.add(Activation('softmax', dtype=new_type))
+    model.add(Cast(dtype=base_type))
 
     return model
 
@@ -88,7 +105,8 @@ def run(use_batch_normalization=False, use_dropout=False):
 
     history = model.fit(X_train, Y_train, batch_size=batch_size, epochs=epochs, verbose=1)
 
-    score = model.evaluate(X_test, Y_test, verbose=1)
+    #score = model.evaluate(X_test, Y_test, verbose=1)
+    score = (0, 0)
 
     return score
 
