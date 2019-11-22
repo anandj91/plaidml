@@ -304,6 +304,12 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
         case Binding::FCONST:
           input = std::make_shared<sem::FloatConst>(bindings[i]->fconst);
           break;
+        case Binding::CCONST: {
+          input = std::make_shared<sem::FloatConst>(bindings[i]->fconst);
+          sem::Type custtype = {sem::Type::VALUE, DataType::CUSTOM};
+          input = _Cast(custtype, input);
+          break;
+        }
         case Binding::TUPLE:
           throw std::runtime_error("Cannot pass tuple to contraction");
       }
@@ -530,6 +536,17 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
           inexprs.push_back(val);
           break;
         }
+        case Binding::CCONST: {
+          sem::ExprPtr val = std::make_shared<sem::FloatConst>(tin.fconst);
+          if (op.agg_vec > 1) {
+            sem::Type type = {sem::Type::VALUE, DataType::FLOAT32, op.agg_vec};
+            val = _Cast(type, val);
+          }
+          sem::Type custtype = {sem::Type::VALUE, DataType::CUSTOM, op.agg_vec};
+          val = _Cast(custtype, val);
+          inexprs.push_back(val);
+          break;
+        }
         case Binding::TUPLE: {
           throw std::runtime_error("Cannot use tuple as contraction local");
         }
@@ -553,14 +570,22 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
           inexprs[0] = (inexprs[0] != 0);
           break;
       }
-      opexpr = _Cond(inexprs[0], inexprs[1], inexprs[2]);
+      auto _true = inexprs[1];
+      auto _false = inexprs[2];
+      sem::Type declatype{sem::Type::VALUE, vars.at(post_op.output).shape.type};
+      if (vars.at(post_op.inputs[1]).shape.type == DataType::CUSTOM
+          || vars.at(post_op.inputs[2]).shape.type == DataType::CUSTOM) {
+        _true = _Cast(declatype, _true);
+        _false = _Cast(declatype, _false);
+      }
+      opexpr = _Cond(inexprs[0], _true, _false);
     } else if (post_op.f.fn == "neg") {
       opexpr = std::make_shared<sem::UnaryExpr>("-", inexprs[0]);
     } else if (post_op.f.fn == "bit_not") {
       opexpr = std::make_shared<sem::UnaryExpr>("~", inexprs[0]);
     } else if (post_op.f.fn == "ident" || post_op.f.fn == "reshape") {
       opexpr = inexprs[0];
-    } else if (post_op.f.fn == "as_float" || post_op.f.fn == "as_int" || post_op.f.fn == "as_uint") {
+    } else if (post_op.f.fn == "as_int" || post_op.f.fn == "as_uint") {
       sem::Type declatype{sem::Type::VALUE, vars.at(post_op.output).shape.type, op.agg_vec};
       opexpr = _Cast(declatype, inexprs[0]);
     } else if (post_op.f.fn == "index") {
@@ -586,7 +611,8 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
       }
       opexpr = poly_eval;
     } else {
-      opexpr = std::make_shared<sem::CallExpr>(_(post_op.f.fn), inexprs);
+      opexpr = std::make_shared<sem::CallExpr>(_(post_op.f.fn), inexprs,
+                    vars.at(post_op.output).shape.type);
     }
     assert(static_cast<bool>(opexpr));
 

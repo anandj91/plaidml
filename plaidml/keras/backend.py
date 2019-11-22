@@ -583,7 +583,7 @@ def depthwise_conv2d(x,
 dot = op.dot
 
 
-def dropout(x, level, noise_shape=None, seed=None):
+def dropout(x, level, noise_shape=None, dtype=floatx(), seed=None):
     if noise_shape is not None:
         raise PlaidMLKerasException('Unimplemented noise shape in dropout')
 
@@ -612,6 +612,9 @@ def dropout(x, level, noise_shape=None, seed=None):
         [('O', ptile.Shape(plaidml.DType.FLOAT32, x.shape.dims))],
         side_effects=[(rng_state, n)],
         name='PrngValue').sole_output()
+
+    if dtype != 'float32':
+        o = cast(o, dtype)
 
     return o
 
@@ -702,6 +705,7 @@ def get_uid(prefix=''):
 
 
 def get_value(x):
+    x = cast(x, plaidml.DType.FLOAT32)
     func = ptile.compose(_ctx, _device(), [], [('out', x)], name='get_value')
     invoker = plaidml.Invoker(_ctx, func)
     shape = invoker.get_output_shape('out')
@@ -1120,11 +1124,11 @@ def random_uniform(shape, minval=0.0, maxval=1.0, dtype=None, seed=None):
         side_effects=[(rng_state, n)],
         name='PrngValue').sole_output()
 
-    if dtype != 'float32':
-        o = cast(o, dtype)
-
     o = (maxval - minval) * o
     o = o + minval
+
+    if dtype != 'float32':
+        o = cast(o, dtype)
 
     return o
 
@@ -1403,7 +1407,11 @@ def separable_conv2d(x,
 
 
 def set_floatx(dtype):
-    keras_set_floatx(dtype)
+    npdtype = dtype
+    if dtype == plaidml.DType.CUSTOM:
+        npdtype = 'float32'
+
+    keras_set_floatx(npdtype)
     plaidml.set_floatx(ptile.convert_np_dtype_to_pml(dtype))
 
 
@@ -1639,6 +1647,7 @@ def var(x, axis=None, keepdims=False):
 
 def variable(value, dtype=None, name=None, constraint=None):
     dtype = dtype or floatx()
+
     if constraint:
         raise PlaidMLKerasException('Unsupported variable constraint')
     if isinstance(value, float) or isinstance(value, six.integer_types):
@@ -1669,9 +1678,9 @@ def variable(value, dtype=None, name=None, constraint=None):
     with tensor.mmap_discard(_ctx) as view:
         view.copy_from_ndarray(value)
         view.writeback()
+
     return ptile.Value.from_var(tensor, value.shape, ptile.convert_np_dtype_to_pml(dtype),
                                 _prepend_name_scope(name, 'tensor_variable'))
-
 
 def zeros(shape, dtype=floatx(), name=None):
     return constant(0.0, shape=shape, dtype=dtype, name=_prepend_name_scope(name, 'zeros'))

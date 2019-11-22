@@ -425,6 +425,7 @@ class StripeGenerator {
         case Binding::FCONST:
           kernel->stmts.push_back(std::make_shared<Constant>(ScalarName(input), binding.fconst));
           break;
+        case Binding::CCONST:
         case Binding::TUPLE:
           throw std::runtime_error("Not implemented!");
           break;

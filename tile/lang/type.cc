@@ -42,6 +42,14 @@ std::string Binding::key() const {
       }
       return c;
     }
+    case Binding::CCONST: {
+      std::string c = DoubleToString(fconst);
+      if (c.find_first_of(".e") == std::string::npos) {
+        c += ".0";
+      }
+      c += "c";
+      return c;
+    }
     case Binding::TUPLE:
     default:
       throw std::logic_error{"Invalid binding for key"};
@@ -651,6 +659,8 @@ void TypeCheck(Program* prog, Bindings* vars) {
             default:
               throw std::runtime_error("UInt width must be 8, 16, 32, or 64");
           }
+        } else if ("custom" == typefamily) {
+          out_type = DataType::CUSTOM;
         }
         // compute out_type from the function name and possibly inputs[1]
         std::vector<size_t> out_shape;
@@ -692,6 +702,9 @@ void TypeCheck(Program* prog, Bindings* vars) {
             break;
           case Binding::FCONST:
             dins.push_back(vars->at(s).fconst);
+            break;
+          case Binding::CCONST:
+            all_const = false;
             break;
         }
       }
@@ -873,6 +886,9 @@ Bindings BindProgram(Program* p, const ShapeMap& inputs, const ShapeMap& outputs
 
 DataType CommonSupertype(DataType left, DataType right) {
   DataType out = left;
+  if (is_custom(left) || is_custom(right)) {
+    return DataType::CUSTOM;
+  }
   if (is_float(right) != is_float(left)) {
     if (is_float(right)) {
       out = right;

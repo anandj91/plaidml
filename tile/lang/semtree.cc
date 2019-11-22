@@ -11,6 +11,7 @@ void Type::log(el::base::type::ostream_t& os) const { os << to_string(*this); }
 
 std::string to_string(const Type& ty) {
   std::ostringstream os;
+  /*
   if (ty.region == Type::LOCAL) {
     os << "local ";
   } else if (ty.region == Type::GLOBAL) {
@@ -25,6 +26,7 @@ std::string to_string(const Type& ty) {
   if (ty.base == Type::INDEX) {
     os << "index ";
   }
+  */
   if (ty.base != Type::TVOID && ty.base != Type::INDEX) {
     os << to_string(ty.dtype);
   }
@@ -66,18 +68,28 @@ void ClampExpr::Accept(Visitor& v) const { v.Visit(*this); }
 
 void CastExpr::Accept(Visitor& v) const { v.Visit(*this); }
 
-CallExpr::CallExpr(Function f, const std::vector<ExprPtr>& v) : function(f), vals(v) {
+CallExpr::CallExpr(Function f, const std::vector<ExprPtr>& v, DataType t) : function(f), type(t), vals(v) {
   static std::map<Function, std::string> names{
       {Function::ACOS, "acos"}, {Function::ASIN, "asin"}, {Function::ATAN, "atan"}, {Function::CEIL, "ceil"},
       {Function::COS, "cos"},   {Function::COSH, "cosh"}, {Function::EXP, "exp"},   {Function::FLOOR, "floor"},
       {Function::LOG, "log"},   {Function::MAD, "mad"},   {Function::POW, "pow"},   {Function::ROUND, "round"},
       {Function::SIN, "sin"},   {Function::SINH, "sinh"}, {Function::SQRT, "sqrt"}, {Function::TAN, "tan"},
-      {Function::TANH, "tanh"},
+      {Function::TANH, "tanh"}, {Function::AS_CUST, "as_custom"}, {Function::AS_FLT, "as_float"},
+      {Function::ADD, "add"}, {Function::SUB, "sub"}, {Function::MUL, "mul"}, {Function::DIV, "div"},
+      {Function::LT, "lt"}, {Function::GT, "gt"}, {Function::LE, "le"}, {Function::GE, "ge"},
+      {Function::EQ, "eq"}, {Function::NEQ, "neq"},
+      {Function::NEG, "neg"}, {Function::SEL, "select"},
   };
   name = names.at(f);
+
+  if (function == Function::AS_FLT) {
+    type = DataType::FLOAT32;
+  } else if (function == Function::AS_CUST) {
+    type = DataType::CUSTOM;
+  }
 }
 
-CallExpr::CallExpr(ExprPtr f, const std::vector<ExprPtr>& v) : vals(v) {
+CallExpr::CallExpr(ExprPtr f, const std::vector<ExprPtr>& v, DataType t) : type(t), vals(v) {
   // The historical concept of CallExpr allowed for the concept of a function
   // pointer, and the semtree builder therefore constructs CallExpr using an
   // arbitrary expression as the target function. In practice, the only type
@@ -97,7 +109,11 @@ CallExpr::CallExpr(ExprPtr f, const std::vector<ExprPtr>& v) : vals(v) {
       {"cos", Function::COS},   {"cosh", Function::COSH}, {"exp", Function::EXP},   {"floor", Function::FLOOR},
       {"log", Function::LOG},   {"mad", Function::MAD},   {"pow", Function::POW},   {"round", Function::ROUND},
       {"sin", Function::SIN},   {"sinh", Function::SINH}, {"sqrt", Function::SQRT}, {"tan", Function::TAN},
-      {"tanh", Function::TANH},
+      {"tanh", Function::TANH}, {"as_custom", Function::AS_CUST}, {"as_float", Function::AS_FLT},
+      {"add", Function::ADD}, {"sub", Function::SUB}, {"mul", Function::MUL}, {"div", Function::DIV},
+      {"lt", Function::LT}, {"gt", Function::GT}, {"le", Function::LE}, {"ge", Function::GE},
+      {"eq", Function::EQ}, {"neq", Function::NEQ},
+      {"neg", Function::NEG}, {"select", Function::SEL},
   };
   auto it = functions.find(name);
   if (it == functions.end()) {
@@ -106,6 +122,11 @@ CallExpr::CallExpr(ExprPtr f, const std::vector<ExprPtr>& v) : vals(v) {
   }
 
   function = it->second;
+  if (function == Function::AS_FLT) {
+    type = DataType::FLOAT32;
+  } else if (function == Function::AS_CUST) {
+    type = DataType::CUSTOM;
+  }
 }
 
 void CallExpr::Accept(Visitor& v) const { v.Visit(*this); }

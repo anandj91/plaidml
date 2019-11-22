@@ -258,9 +258,11 @@ static void ContractionWrap(KernelList& r, const Contraction* c, FlatContraction
   while (SimplifyFlat(&flat)) {
   }
   // Do memory based tile optimization
+  /*
   for (auto vec_size = settings.vec_size; flat.agg_vec == 1 && 1 < vec_size; vec_size /= 2) {
     flat = Vectorize(flat, vec_size);
   }
+  */
   std::string flat_key = flat.CacheKeyString(vars);
   auto it = flat_cache->find(flat_key);
   if (it != flat_cache->end()) {

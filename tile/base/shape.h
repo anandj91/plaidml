@@ -38,6 +38,7 @@ enum class DataType : int {
   FLOAT16 = 0x31,
   FLOAT32 = 0x32,
   FLOAT64 = 0x33,
+  CUSTOM = 0x34,
   PRNG = 0x40,
 };
 
@@ -77,6 +78,15 @@ inline bool is_float(const DataType& dt) {
   }
 }
 
+inline bool is_custom(const DataType& dt) {
+  switch (dt) {
+    case DataType::CUSTOM:
+      return true;
+    default:
+      return false;
+  }
+}
+
 inline size_t bit_width(const DataType& dt) {
   switch (dt) {
     case DataType::BOOLEAN:
@@ -100,6 +110,8 @@ inline size_t bit_width(const DataType& dt) {
     case DataType::FLOAT16:
       return 16;
     case DataType::FLOAT32:
+      return 32;
+    case DataType::CUSTOM:
       return 32;
     case DataType::FLOAT64:
       return 64;
@@ -140,6 +152,8 @@ inline std::string to_string(const DataType& dt) {
       return "fp64";
     case DataType::PRNG:
       return "prng";
+    case DataType::CUSTOM:
+      return "custom";
     default:
       return "!!invalid data type: " + std::to_string(static_cast<int>(dt));
   }
@@ -310,6 +324,8 @@ inline DataType FromProto(const proto::TensorShape_DataType& dt) {
       return DataType::FLOAT64;
     case proto::TensorShape_DataType_PRNG:
       return DataType::PRNG;
+    case proto::TensorShape_DataType_CUSTOM:
+      return DataType::CUSTOM;
     default:
       throw std::runtime_error("Unknown DataType");
   }
@@ -345,6 +361,8 @@ inline proto::TensorShape_DataType IntoProto(const DataType& dt) {
       return proto::TensorShape_DataType_FLOAT64;
     case DataType::PRNG:
       return proto::TensorShape_DataType_PRNG;
+    case DataType::CUSTOM:
+      return proto::TensorShape_DataType_CUSTOM;
     default:
       throw std::runtime_error("Unknown DataType");
   }
