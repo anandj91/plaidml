@@ -802,6 +802,7 @@ class DType(enum.IntEnum):
     FLOAT16 = 0x31
     FLOAT32 = 0x32
     FLOAT64 = 0x33
+    CUSTOM = 0x34
     PRNG = 0x40
 
 
@@ -817,7 +818,8 @@ _CTYPES = {
     DType.UINT64: ctypes.c_uint64,
     DType.FLOAT16: ctypes.c_uint16,  # TODO: Implement half-width float wrapper
     DType.FLOAT32: ctypes.c_float,
-    DType.FLOAT64: ctypes.c_double
+    DType.FLOAT64: ctypes.c_double,
+    DType.CUSTOM: ctypes.c_float
 }
 
 _NP_TYPES = {

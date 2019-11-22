@@ -1696,7 +1696,7 @@ class Gradients(tile.Operation):
     def __init__(self, loss, variables):
         super(Gradients, self).__init__(
             None, [('Loss', loss)] + [('I' + str(i), variables[i]) for i in range(len(variables))],
-            [('O' + str(i), variables[i].shape) for i in range(len(variables))])
+            [('O' + str(i), variables[i].shape) for i in range(len(variables))], name="GradOp")
         self.num_vars = len(variables)
 
     def bind(self, bindings):

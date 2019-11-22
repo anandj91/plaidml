@@ -90,6 +90,7 @@ NUMPY_DTYPE_TO_PLAIDML = {
     'uint16': plaidml.DType.UINT16,
     'uint32': plaidml.DType.UINT32,
     'uint64': plaidml.DType.UINT64,
+    'custom': plaidml.DType.CUSTOM,
 }
 
 PLAIDML_DTYPE_TO_NUMPY = dict([[v, k] for k, v in NUMPY_DTYPE_TO_PLAIDML.items()])
@@ -1200,6 +1201,7 @@ DTYPE_INFOS = {
     plaidml.DType.FLOAT16: DTypeInfo(base='float', width=2),
     plaidml.DType.FLOAT32: DTypeInfo(base='float', width=4),
     plaidml.DType.FLOAT64: DTypeInfo(base='float', width=8),
+    plaidml.DType.CUSTOM: DTypeInfo(base='custom', width=4),
 }
 
 INFO_DTYPES = dict([[v, k] for k, v in DTYPE_INFOS.items()])
@@ -1218,7 +1220,9 @@ def common_dtype(*args):
     for dtype in args:
         current = DTYPE_INFOS[dtype]
         if best.base != current.base:
-            if best.base == 'bool':
+            if best.base == "custom" or current.base == "custom":
+                best = current if current.width > best.width else DTypeInfo(base="custom", width=4)
+            elif best.base == 'bool':
                 best = current
             elif current.base == 'bool':
                 # Just use whatever we have so far; booleans can be coerced to anything.

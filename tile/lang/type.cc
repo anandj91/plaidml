@@ -651,6 +651,8 @@ void TypeCheck(Program* prog, Bindings* vars) {
             default:
               throw std::runtime_error("UInt width must be 8, 16, 32, or 64");
           }
+        } else if ("custom" == typefamily) {
+          out_type = DataType::CUSTOM;
         }
         // compute out_type from the function name and possibly inputs[1]
         std::vector<size_t> out_shape;
@@ -873,6 +875,9 @@ Bindings BindProgram(Program* p, const ShapeMap& inputs, const ShapeMap& outputs
 
 DataType CommonSupertype(DataType left, DataType right) {
   DataType out = left;
+  if (is_custom(left) || is_custom(right)) {
+    return DataType::CUSTOM;
+  }
   if (is_float(right) != is_float(left)) {
     if (is_float(right)) {
       out = right;

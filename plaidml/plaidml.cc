@@ -591,6 +591,8 @@ tile::DataType MakeTileDataType(plaidml_datatype datatype) {
       return tile::DataType::FLOAT32;
     case PLAIDML_DATA_FLOAT64:
       return tile::DataType::FLOAT64;
+    case PLAIDML_DATA_CUSTOM:
+      return tile::DataType::CUSTOM;
     case PLAIDML_DATA_PRNG:
       return tile::DataType::PRNG;
     default:
@@ -714,6 +716,8 @@ extern "C" plaidml_datatype plaidml_get_shape_type(plaidml_shape* shape) {
       return PLAIDML_DATA_FLOAT32;
     case tile::DataType::FLOAT64:
       return PLAIDML_DATA_FLOAT64;
+    case tile::DataType::CUSTOM:
+      return PLAIDML_DATA_CUSTOM;
     case tile::DataType::PRNG:
       return PLAIDML_DATA_PRNG;
     default:
