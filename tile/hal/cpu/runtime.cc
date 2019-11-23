@@ -17,6 +17,32 @@ namespace rt {
 void barrier() {}
 float h2f(half_float::half n) { return n; }
 half_float::half f2h(float n) { return half_float::half_cast<half_float::half>(n); }
+typedef struct {
+  float d;
+} custom;
+custom as_custom(float a, int b) {
+  custom c;
+  c.d = a;
+  return c;
+}
+float as_float(custom a, int b) {
+  return a.d;
+}
+custom add(custom a, custom b) {
+  return as_custom(as_float(a, 32) + as_float(b, 32), 32);
+}
+custom sub(custom a, custom b) {
+  return as_custom(as_float(a, 32) - as_float(b, 32), 32);
+}
+custom mul(custom a, custom b) {
+  return as_custom(as_float(a, 32) * as_float(b, 32), 32);
+}
+custom div(custom a, custom b) {
+  return as_custom(as_float(a, 32) / as_float(b, 32), 32);
+}
+custom neg(custom a) {
+  return as_custom(-as_float(a, 32), 32);
+}
 }  // namespace rt
 
 template <typename T>
@@ -30,6 +56,9 @@ llvm::JITSymbol Runtime::findSymbol(const std::string& name) {
   static std::map<std::string, llvm::JITEvaluatedSymbol> symbols{
       {"Barrier", symInfo(rt::barrier)},   {"__gnu_h2f_ieee", symInfo(rt::h2f)}, {"__gnu_f2h_ieee", symInfo(rt::f2h)},
       {"___truncsfhf2", symInfo(rt::f2h)}, {"___extendhfsf2", symInfo(rt::h2f)},
+      {"as_custom", symInfo(rt::as_custom)}, {"as_float", symInfo(rt::as_float)},
+      {"add", symInfo(rt::add)}, {"mul", symInfo(rt::mul)}, {"sub", symInfo(rt::sub)}, {"div", symInfo(rt::div)},
+      {"neg", symInfo(rt::neg)},
   };
   auto loc = symbols.find(name);
   if (loc != symbols.end()) {

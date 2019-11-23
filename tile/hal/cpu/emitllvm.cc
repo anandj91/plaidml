@@ -148,6 +148,7 @@ void Emit::Visit(const sem::DeclareStmt& n) {
 void Emit::Visit(const sem::UnaryExpr& n) {
   value inner = Eval(n.inner);
   using fnv1a64::hashlit;
+
   switch (fnv1a64::hash(n.op.c_str())) {
     case hashlit("!"):
       Resolve(value{builder_.CreateNot(inner.v), inner.t});
@@ -155,6 +156,9 @@ void Emit::Visit(const sem::UnaryExpr& n) {
     case hashlit("-"):
       if (IsFloatingPointType(inner.t)) {
         Resolve(value{builder_.CreateFNeg(inner.v), inner.t});
+      } else if (IsCustomType(inner.t)) {
+        sem::CallExpr call("neg", std::vector<sem::ExprPtr>{n.inner});
+        Emit::Visit(call);
       } else {
         Resolve(value{builder_.CreateNeg(inner.v), inner.t});
       }
@@ -178,6 +182,7 @@ void Emit::Visit(const sem::BinaryExpr& n) {
   // whether our operands are floats, signed ints, or unsigned ints.
   uint64_t ophash = fnv1a64::hash(n.op.c_str());
   using fnv1a64::hashlit;
+
   if (IsFloatingPointType(comtype)) {
     switch (ophash) {
       case hashlit("+"):
@@ -211,6 +216,27 @@ void Emit::Visit(const sem::BinaryExpr& n) {
         Resolve(value{builder_.CreateFCmpOGE(lhs.v, rhs.v), booltype});
         return;
     }
+  } else if (IsCustomType(comtype)) {
+    std::string name;
+    switch (ophash) {
+      case hashlit("+"):
+        name = "add";
+        break;
+      case hashlit("-"):
+        name = "sub";
+        break;
+      case hashlit("*"):
+        name = "mul";
+        break;
+      case hashlit("/"):
+        name = "div";
+        break;
+      default:
+        throw Error("Illegal Binary");
+    }
+    sem::CallExpr call(name, std::vector<sem::ExprPtr>{n.lhs, n.rhs}, comtype.dtype);
+    Emit::Visit(call);
+    return;
   } else if (IsUnsignedIntegerType(comtype)) {
     switch (ophash) {
       case hashlit("+"):
@@ -436,9 +462,10 @@ void Emit::Visit(const sem::CallExpr& n) {
   // have the same type, which is 'double' by default, and the result will have
   // the same type. If one or more of the arguments are vectors, we will convert
   // non-vector arguments up to the vector size.
-  sem::Type gentype{sem::Type::VALUE, DataType::FLOAT64};
+  sem::Type gentype{sem::Type::VALUE, n.type};
   std::string typefix = ".";
   std::vector<value> vals;
+  std::vector<llvm::Type*> paramTypes;
   for (auto& expr : n.vals) {
     auto val = Eval(expr);
     if (val.t.vec_width > gentype.vec_width) {
@@ -446,13 +473,15 @@ void Emit::Visit(const sem::CallExpr& n) {
       typefix = ".v" + std::to_string(gentype.vec_width);
     }
     vals.push_back(val);
+    paramTypes.push_back(CType(val.t));
   }
-  typefix += "f64";
+  typefix += "f32";
   // Cast each argument value to the common type used for this call. This may
   // require vector-expansion.
   std::vector<llvm::Value*> args;
   for (auto& val : vals) {
-    args.push_back(CastTo(val, gentype));
+    //args.push_back(CastTo(val, gentype));
+    args.push_back(val.v);
   }
   std::string linkName;
   bool devectorize = false;
@@ -483,6 +512,8 @@ void Emit::Visit(const sem::CallExpr& n) {
       linkName = n.name;
       devectorize = true;
       break;
+    case sem::CallExpr::Function::OTH:
+      linkName = n.name;
   }
   // Find a reference to that builtin function, or generate a reference if this
   // is the first time we've called it.
@@ -496,7 +527,6 @@ void Emit::Visit(const sem::CallExpr& n) {
       restype.vec_width = 1;
     }
     llvm::Type* ltype = CType(restype);
-    std::vector<llvm::Type*> paramTypes(args.size(), ltype);
     auto funcType = llvm::FunctionType::get(ltype, paramTypes, false);
     auto link = llvm::Function::ExternalLinkage;
     func = llvm::Function::Create(funcType, link, linkName, module_.get());
@@ -601,7 +631,7 @@ void Emit::LimitConstFP(llvm::Type* ty, sem::LimitConst::Which which) {
       v = llvm::ConstantFP::getInfinity(ty, /*Negative*/ false);
       break;
   }
-  sem::Type comtype{sem::Type::VALUE, DataType::FLOAT64};
+  sem::Type comtype{sem::Type::VALUE, DataType::FLOAT32};
   Resolve(value{v, comtype});
 }
 
@@ -643,10 +673,10 @@ void Emit::Visit(const sem::LimitConst& n) {
     case DataType::FLOAT64:
       LimitConstFP(builder_.getDoubleTy(), n.which);
       break;
+    case DataType::CUSTOM:
     case DataType::INT128:
     case DataType::PRNG:
     case DataType::INVALID:
-    case DataType::CUSTOM:
       throw Error("Unknown type has no constants");
   }
 }
@@ -912,6 +942,11 @@ llvm::Type* Emit::CType(const sem::Type& type) {
     case DataType::FLOAT32:
       t = llvm::Type::getFloatTy(context_);
       break;
+    case DataType::CUSTOM:
+      static llvm::ArrayRef<llvm::Type*> types(llvm::Type::getFloatTy(context_));
+      static auto s_type = llvm::StructType::create(context_, types, "custom", true);
+      t = s_type;
+      break;
     case DataType::FLOAT64:
       t = llvm::Type::getDoubleTy(context_);
       break;
@@ -998,6 +1033,17 @@ bool Emit::IsUnsignedIntegerType(const sem::Type& t) {
     case DataType::UINT16:
     case DataType::UINT32:
     case DataType::UINT64:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool Emit::IsCustomType(const sem::Type& t) {
+  if (t.base != sem::Type::VALUE) return false;
+  if (t.array > 0) return false;
+  switch (t.dtype) {
+    case DataType::CUSTOM:
       return true;
     default:
       return false;

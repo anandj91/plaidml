@@ -84,6 +84,7 @@ class Emit : public sem::Visitor {
   bool CurrentBlockIsTerminated();
   static bool IsUnsignedIntegerType(const sem::Type&);
   static bool IsFloatingPointType(const sem::Type&);
+  static bool IsCustomType(const sem::Type&);
   bool PointerAddition(value left, value right);
   sem::Type CommonType(const value& left, const value& right);
   sem::Type ConvergeOperands(value* left, value* right);

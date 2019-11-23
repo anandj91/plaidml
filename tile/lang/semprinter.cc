@@ -46,6 +46,9 @@ inline std::string c_dtype(const DataType& dt) {
     case DataType::FLOAT32:
       base = "float";
       break;
+    case DataType::CUSTOM:
+      base = "custom";
+      break;
     case DataType::FLOAT64:
       base = "double";
       break;

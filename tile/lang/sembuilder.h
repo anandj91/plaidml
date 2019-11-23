@@ -60,8 +60,14 @@ class LValueHolder {
 
 inline LValueHolder _(const std::string& name) { return LValueHolder(std::make_shared<LookupLVal>(name)); }
 
-inline std::shared_ptr<LimitConst> _LimitConst(const LimitConst::Which& which, const DataType& type) {
-  return std::make_shared<LimitConst>(which, type);
+inline ExprPtr _LimitConst(const LimitConst::Which& which, const DataType& type) {
+  if (type == DataType::CUSTOM) {
+    auto l = std::make_shared<LimitConst>(which, DataType::FLOAT32);
+    auto w = _Const(32);
+    return std::make_shared<CallExpr>("as_custom", std::vector<ExprPtr>({l, w}), DataType::CUSTOM);
+  } else {
+    return std::make_shared<LimitConst>(which, type);
+  }
 }
 
 inline std::shared_ptr<IndexExpr> _Index(const IndexExpr::Type& type, size_t dim) {

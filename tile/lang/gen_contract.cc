@@ -537,10 +537,7 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
     }
 
     sem::ExprPtr opexpr = nullptr;
-    if (bin_ops.count(post_op.f.fn)) {
-      std::string opname = bin_ops.at(post_op.f.fn);
-      opexpr = std::make_shared<sem::BinaryExpr>(opname, inexprs[0], inexprs[1]);
-    } else if (post_op.f.fn == "cond") {
+    if (post_op.f.fn == "cond") {
       switch (vars.at(post_op.inputs[0]).shape.type) {
         case DataType::FLOAT16:
         case DataType::FLOAT32:
@@ -554,13 +551,9 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
           break;
       }
       opexpr = _Cond(inexprs[0], inexprs[1], inexprs[2]);
-    } else if (post_op.f.fn == "neg") {
-      opexpr = std::make_shared<sem::UnaryExpr>("-", inexprs[0]);
-    } else if (post_op.f.fn == "bit_not") {
-      opexpr = std::make_shared<sem::UnaryExpr>("~", inexprs[0]);
     } else if (post_op.f.fn == "ident" || post_op.f.fn == "reshape") {
       opexpr = inexprs[0];
-    } else if (post_op.f.fn == "as_float" || post_op.f.fn == "as_int" || post_op.f.fn == "as_uint") {
+    } else if (post_op.f.fn == "as_int" || post_op.f.fn == "as_uint") {
       sem::Type declatype{sem::Type::VALUE, vars.at(post_op.output).shape.type, op.agg_vec};
       opexpr = _Cast(declatype, inexprs[0]);
     } else if (post_op.f.fn == "index") {
@@ -586,7 +579,8 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
       }
       opexpr = poly_eval;
     } else {
-      opexpr = std::make_shared<sem::CallExpr>(_(post_op.f.fn), inexprs);
+      opexpr = std::make_shared<sem::CallExpr>(post_op.f.fn, inexprs,
+                        vars.at(post_op.output).shape.type);
     }
     assert(static_cast<bool>(opexpr));
 

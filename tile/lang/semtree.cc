@@ -66,7 +66,9 @@ void ClampExpr::Accept(Visitor& v) const { v.Visit(*this); }
 
 void CastExpr::Accept(Visitor& v) const { v.Visit(*this); }
 
-CallExpr::CallExpr(Function f, const std::vector<ExprPtr>& v) : function(f), vals(v) {
+CallExpr::CallExpr(const std::string& n, const std::vector<ExprPtr>& v, DataType t) : function(Function::OTH), type(t), name(n), vals(v) {}
+
+CallExpr::CallExpr(Function f, const std::vector<ExprPtr>& v, DataType t) : function(f), type(t), vals(v) {
   static std::map<Function, std::string> names{
       {Function::ACOS, "acos"}, {Function::ASIN, "asin"}, {Function::ATAN, "atan"}, {Function::CEIL, "ceil"},
       {Function::COS, "cos"},   {Function::COSH, "cosh"}, {Function::EXP, "exp"},   {Function::FLOOR, "floor"},
@@ -77,7 +79,7 @@ CallExpr::CallExpr(Function f, const std::vector<ExprPtr>& v) : function(f), val
   name = names.at(f);
 }
 
-CallExpr::CallExpr(ExprPtr f, const std::vector<ExprPtr>& v) : vals(v) {
+CallExpr::CallExpr(ExprPtr f, const std::vector<ExprPtr>& v, DataType t) : type(t), vals(v) {
   // The historical concept of CallExpr allowed for the concept of a function
   // pointer, and the semtree builder therefore constructs CallExpr using an
   // arbitrary expression as the target function. In practice, the only type
