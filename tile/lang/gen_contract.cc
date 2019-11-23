@@ -563,6 +563,8 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
     } else if (post_op.f.fn == "as_float" || post_op.f.fn == "as_int" || post_op.f.fn == "as_uint") {
       sem::Type declatype{sem::Type::VALUE, vars.at(post_op.output).shape.type, op.agg_vec};
       opexpr = _Cast(declatype, inexprs[0]);
+    } else if (post_op.f.fn == "as_custom") {
+      opexpr = std::make_shared<sem::CallExpr>(post_op.f.fn, inexprs);
     } else if (post_op.f.fn == "index") {
       // Pull constant back out of semtree node
       sem::IntConst* val = dynamic_cast<sem::IntConst*>(inexprs[1].get());

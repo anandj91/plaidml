@@ -81,6 +81,7 @@ class Emit : public sem::Visitor {
   void LimitConstSInt(unsigned bits, sem::LimitConst::Which);
   void LimitConstUInt(unsigned bits, sem::LimitConst::Which);
   void LimitConstFP(llvm::Type*, sem::LimitConst::Which);
+  void LimitConstCustom(const sem::LimitConst&);
   bool CurrentBlockIsTerminated();
   static bool IsUnsignedIntegerType(const sem::Type&);
   static bool IsFloatingPointType(const sem::Type&);

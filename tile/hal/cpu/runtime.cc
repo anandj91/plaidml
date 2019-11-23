@@ -47,6 +47,14 @@ float _neg(float a) {
   print(" - ", 0, a, r);
   return r;
 }
+typedef struct {
+  float d;
+} custom;
+custom as_custom(float a, int b) {
+  custom c;
+  c.d = a;
+  return c;
+}
 }  // namespace rt
 
 template <typename T>
@@ -59,7 +67,7 @@ llvm::JITEvaluatedSymbol symInfo(T ptr) {
 llvm::JITSymbol Runtime::findSymbol(const std::string& name) {
   static std::map<std::string, llvm::JITEvaluatedSymbol> symbols{
       {"Barrier", symInfo(rt::barrier)},   {"__gnu_h2f_ieee", symInfo(rt::h2f)}, {"__gnu_f2h_ieee", symInfo(rt::f2h)},
-      {"___truncsfhf2", symInfo(rt::f2h)}, {"___extendhfsf2", symInfo(rt::h2f)},
+      {"___truncsfhf2", symInfo(rt::f2h)}, {"___extendhfsf2", symInfo(rt::h2f)}, {"as_custom", symInfo(rt::as_custom)},
       {"_add", symInfo(rt::_add)}, {"_mul", symInfo(rt::_mul)}, {"_sub", symInfo(rt::_sub)}, {"_div", symInfo(rt::_div)},
       {"_neg", symInfo(rt::_neg)},
   };

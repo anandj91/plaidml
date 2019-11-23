@@ -478,9 +478,10 @@ void Emit::Visit(const sem::CallExpr& n) {
   // have the same type, which is 'double' by default, and the result will have
   // the same type. If one or more of the arguments are vectors, we will convert
   // non-vector arguments up to the vector size.
-  sem::Type gentype{sem::Type::VALUE, DataType::FLOAT32};
+  sem::Type gentype{sem::Type::VALUE, DataType::FLOAT64};
   std::string typefix = ".";
   std::vector<value> vals;
+  std::vector<llvm::Type*> paramTypes;
   for (auto& expr : n.vals) {
     auto val = Eval(expr);
     if (val.t.vec_width > gentype.vec_width) {
@@ -488,13 +489,15 @@ void Emit::Visit(const sem::CallExpr& n) {
       typefix = ".v" + std::to_string(gentype.vec_width);
     }
     vals.push_back(val);
+    paramTypes.push_back(CType(val.t));
   }
   typefix += "f32";
   // Cast each argument value to the common type used for this call. This may
   // require vector-expansion.
   std::vector<llvm::Value*> args;
   for (auto& val : vals) {
-    args.push_back(CastTo(val, gentype));
+    //args.push_back(CastTo(val, gentype));
+    args.push_back(val.v);
   }
   std::string linkName;
   bool devectorize = false;
@@ -528,6 +531,7 @@ void Emit::Visit(const sem::CallExpr& n) {
     case sem::CallExpr::Function::OTH:
       linkName = n.name;
       devectorize = true;
+	  gentype.dtype = DataType::CUSTOM;
       break;
     default:
       linkName = n.name;
@@ -544,7 +548,6 @@ void Emit::Visit(const sem::CallExpr& n) {
       restype.vec_width = 1;
     }
     llvm::Type* ltype = CType(restype);
-    std::vector<llvm::Type*> paramTypes(args.size(), ltype);
     auto funcType = llvm::FunctionType::get(ltype, paramTypes, false);
     auto link = llvm::Function::ExternalLinkage;
     func = llvm::Function::Create(funcType, link, linkName, module_.get());
@@ -653,6 +656,13 @@ void Emit::LimitConstFP(llvm::Type* ty, sem::LimitConst::Which which) {
   Resolve(value{v, comtype});
 }
 
+void Emit::LimitConstCustom(const sem::LimitConst& n) {
+  auto a = std::make_shared<sem::LimitConst>(n.which, DataType::FLOAT32);
+  auto b = std::make_shared<sem::IntConst>(32);
+  sem::CallExpr call("as_custom", std::vector<sem::ExprPtr>{a, b});
+  Resolve(Process(call));
+}
+
 void Emit::Visit(const sem::LimitConst& n) {
   switch (n.type) {
     case DataType::BOOLEAN:
@@ -691,10 +701,12 @@ void Emit::Visit(const sem::LimitConst& n) {
     case DataType::FLOAT64:
       LimitConstFP(builder_.getDoubleTy(), n.which);
       break;
+    case DataType::CUSTOM:
+      LimitConstCustom(n);
+      break;
     case DataType::INT128:
     case DataType::PRNG:
     case DataType::INVALID:
-    case DataType::CUSTOM:
       throw Error("Unknown type has no constants");
   }
 }
@@ -959,6 +971,11 @@ llvm::Type* Emit::CType(const sem::Type& type) {
       break;
     case DataType::FLOAT32:
       t = llvm::Type::getFloatTy(context_);
+      break;
+    case DataType::CUSTOM:
+      static llvm::ArrayRef<llvm::Type*> types(llvm::Type::getFloatTy(context_));
+      static auto s_type = llvm::StructType::create(context_, types, "custom", true);
+      t = s_type;
       break;
     case DataType::FLOAT64:
       t = llvm::Type::getDoubleTy(context_);

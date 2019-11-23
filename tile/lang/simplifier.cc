@@ -475,6 +475,13 @@ void Simplify(const std::vector<KernelInfo>& kernels) {
       sem::Simplifier simplifier{&scope};
       ki.kfunc->Accept(simplifier);
     }
+    if (VLOG_IS_ON(4)) {
+      sem::Print emit_debug(*ki.kfunc);
+      VLOG(4) << "Generic debug kernel after simplification:";
+      VLOG(4) << ki.comments;
+      VLOG(4) << emit_debug.str();
+    }
+
     for (auto& candidate : ki.candidates) {
       lang::Scope<sem::Symbol> scope;
       sem::Simplifier simplifier{&scope};
