@@ -64,7 +64,7 @@ inline ExprPtr _LimitConst(const LimitConst::Which& which, const DataType& type)
   if (type == DataType::CUSTOM) {
     auto l = std::make_shared<LimitConst>(which, DataType::FLOAT32);
     auto w = _Const(32);
-    return std::make_shared<CallExpr>("as_custom", std::vector<ExprPtr>({l, w}), DataType::CUSTOM);
+    return std::make_shared<CallExpr>(CallExpr::Function::AS_CUST, std::vector<ExprPtr>({l, w}), DataType::CUSTOM);
   } else {
     return std::make_shared<LimitConst>(which, type);
   }

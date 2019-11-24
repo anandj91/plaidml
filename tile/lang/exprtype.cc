@@ -37,9 +37,9 @@ unsigned Rank(sem::Type ty) {
       return 10;
     case DataType::FLOAT16:
       return 11;
-    case DataType::CUSTOM:
-      return 12;
     case DataType::FLOAT32:
+      return 12;
+    case DataType::CUSTOM:
       return 13;
     case DataType::FLOAT64:
       return 14;

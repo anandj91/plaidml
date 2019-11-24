@@ -157,7 +157,7 @@ void Emit::Visit(const sem::UnaryExpr& n) {
       if (IsFloatingPointType(inner.t)) {
         Resolve(value{builder_.CreateFNeg(inner.v), inner.t});
       } else if (IsCustomType(inner.t)) {
-        sem::CallExpr call("neg", std::vector<sem::ExprPtr>{n.inner});
+        sem::CallExpr call(sem::CallExpr::Function::NEG, std::vector<sem::ExprPtr>{n.inner}, DataType::CUSTOM);
         Emit::Visit(call);
       } else {
         Resolve(value{builder_.CreateNeg(inner.v), inner.t});
@@ -175,7 +175,10 @@ void Emit::Visit(const sem::BinaryExpr& n) {
   // arithmetic sort of addition, so we'll handle them as a special case.
   if (n.op == "+" && PointerAddition(lhs, rhs)) return;
 
-  sem::Type comtype = ConvergeOperands(&lhs, &rhs);
+  sem::Type comtype = lang::Promote({lhs.t, rhs.t});
+  if (!IsCustomType(comtype)) {
+    ConvergeOperands(&lhs, &rhs);
+  }
   sem::Type booltype{sem::Type::VALUE, DataType::BOOLEAN};
 
   // Create the instruction that represents this operator, which depends on
@@ -217,24 +220,52 @@ void Emit::Visit(const sem::BinaryExpr& n) {
         return;
     }
   } else if (IsCustomType(comtype)) {
-    std::string name;
+    sem::CallExpr::Function func;
     switch (ophash) {
       case hashlit("+"):
-        name = "add";
+        func = sem::CallExpr::Function::ADD;
         break;
       case hashlit("-"):
-        name = "sub";
+        func = sem::CallExpr::Function::SUB;
         break;
       case hashlit("*"):
-        name = "mul";
+        func = sem::CallExpr::Function::MUL;
         break;
       case hashlit("/"):
-        name = "div";
+        func = sem::CallExpr::Function::DIV;
+        break;
+      case hashlit("<"):
+        func = sem::CallExpr::Function::LT;
+        break;
+      case hashlit(">"):
+        func = sem::CallExpr::Function::GT;
+        break;
+      case hashlit("<="):
+        func = sem::CallExpr::Function::LE;
+        break;
+      case hashlit(">="):
+        func = sem::CallExpr::Function::GE;
+        break;
+      case hashlit("=="):
+        func = sem::CallExpr::Function::EQ;
+        break;
+      case hashlit("!="):
+        func = sem::CallExpr::Function::NEQ;
         break;
       default:
-        throw Error("Illegal Binary");
+        throw Error("Illegal Binary "  + n.op);
     }
-    sem::CallExpr call(name, std::vector<sem::ExprPtr>{n.lhs, n.rhs}, comtype.dtype);
+    auto l = n.lhs;
+    auto r = n.rhs;
+    if (comtype.dtype != lhs.t.dtype) {
+      auto w = std::make_shared<sem::IntConst>(32);
+      l = std::make_shared<sem::CallExpr>(sem::CallExpr::Function::AS_CUST, std::vector<sem::ExprPtr>({l, w}), DataType::CUSTOM);
+    }
+    if (comtype.dtype != rhs.t.dtype) {
+      auto w = std::make_shared<sem::IntConst>(32);
+      r = std::make_shared<sem::CallExpr>(sem::CallExpr::Function::AS_CUST, std::vector<sem::ExprPtr>({r, w}), DataType::CUSTOM);
+    }
+    sem::CallExpr call(func, std::vector<sem::ExprPtr>{l, r}, DataType::CUSTOM);
     Emit::Visit(call);
     return;
   } else if (IsUnsignedIntegerType(comtype)) {
@@ -464,7 +495,9 @@ void Emit::Visit(const sem::CallExpr& n) {
   // non-vector arguments up to the vector size.
   sem::Type gentype{sem::Type::VALUE, n.type};
   std::string typefix = ".";
+  std::stringstream c_typefix;
   std::vector<value> vals;
+  std::vector<sem::Type> types;
   std::vector<llvm::Type*> paramTypes;
   for (auto& expr : n.vals) {
     auto val = Eval(expr);
@@ -473,7 +506,9 @@ void Emit::Visit(const sem::CallExpr& n) {
       typefix = ".v" + std::to_string(gentype.vec_width);
     }
     vals.push_back(val);
+    types.push_back(val.t);
     paramTypes.push_back(CType(val.t));
+    c_typefix << "_" << val.t;
   }
   typefix += "f32";
   // Cast each argument value to the common type used for this call. This may
@@ -485,35 +520,59 @@ void Emit::Visit(const sem::CallExpr& n) {
   }
   std::string linkName;
   bool devectorize = false;
-  switch (n.function) {
-    case sem::CallExpr::Function::CEIL:
-    case sem::CallExpr::Function::COS:
-    case sem::CallExpr::Function::EXP:
-    case sem::CallExpr::Function::FLOOR:
-    case sem::CallExpr::Function::LOG:
-    case sem::CallExpr::Function::POW:
-    case sem::CallExpr::Function::SIN:
-    case sem::CallExpr::Function::SQRT:
-      linkName = "llvm." + n.name + typefix;
-      break;
-    case sem::CallExpr::Function::MAD:
-      linkName = "llvm.fma" + typefix;
-      break;
-    case sem::CallExpr::Function::ROUND:
-      linkName = (gentype.vec_width > 1) ? ("llvm.rint" + typefix) : "round";
-      break;
-    case sem::CallExpr::Function::ACOS:
-    case sem::CallExpr::Function::ASIN:
-    case sem::CallExpr::Function::ATAN:
-    case sem::CallExpr::Function::COSH:
-    case sem::CallExpr::Function::SINH:
-    case sem::CallExpr::Function::TAN:
-    case sem::CallExpr::Function::TANH:
-      linkName = n.name;
-      devectorize = true;
-      break;
-    case sem::CallExpr::Function::OTH:
-      linkName = n.name;
+  auto comtype = lang::Promote(types);
+  if (comtype.dtype == DataType::CUSTOM ||
+      gentype.dtype == DataType::CUSTOM) {
+    devectorize = true;
+    linkName = n.name + c_typefix.str();
+    switch (n.function) {
+      case sem::CallExpr::Function::LT:
+      case sem::CallExpr::Function::GT:
+      case sem::CallExpr::Function::LE:
+      case sem::CallExpr::Function::GE:
+      case sem::CallExpr::Function::EQ:
+      case sem::CallExpr::Function::NEQ:
+        gentype.dtype = DataType::BOOLEAN;
+        break;
+      case sem::CallExpr::Function::AS_FLT:
+        gentype.dtype = DataType::FLOAT32;
+        break;
+      default:
+        gentype.dtype = DataType::CUSTOM;
+    }
+  } else {
+    switch (n.function) {
+      case sem::CallExpr::Function::CEIL:
+      case sem::CallExpr::Function::COS:
+      case sem::CallExpr::Function::EXP:
+      case sem::CallExpr::Function::FLOOR:
+      case sem::CallExpr::Function::LOG:
+      case sem::CallExpr::Function::POW:
+      case sem::CallExpr::Function::SIN:
+      case sem::CallExpr::Function::SQRT:
+        linkName = "llvm." + n.name + typefix;
+        break;
+      case sem::CallExpr::Function::MAD:
+        linkName = "llvm.fma" + typefix;
+        break;
+      case sem::CallExpr::Function::ROUND:
+        linkName = (gentype.vec_width > 1) ? ("llvm.rint" + typefix) : "round";
+        break;
+      case sem::CallExpr::Function::AS_FLT:
+        linkName = n.name + c_typefix.str();
+        break;
+      case sem::CallExpr::Function::ACOS:
+      case sem::CallExpr::Function::ASIN:
+      case sem::CallExpr::Function::ATAN:
+      case sem::CallExpr::Function::COSH:
+      case sem::CallExpr::Function::SINH:
+      case sem::CallExpr::Function::TAN:
+      case sem::CallExpr::Function::TANH:
+      default:
+        linkName = n.name;
+        devectorize = true;
+        break;
+    }
   }
   // Find a reference to that builtin function, or generate a reference if this
   // is the first time we've called it.
@@ -1086,6 +1145,12 @@ sem::Type Emit::ConvergeOperands(value* left, value* right) {
   *left = value{CastTo(*left, comtype), comtype};
   *right = value{CastTo(*right, comtype), comtype};
   return comtype;
+}
+
+std::string Emit::print(value& val) {
+  std::stringstream ss;
+  ss << val.t << "(" << print(val.v->getType()) << ")";
+  return ss.str();
 }
 
 std::string Emit::print(const llvm::Type* t) {

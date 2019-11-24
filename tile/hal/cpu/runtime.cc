@@ -5,6 +5,7 @@
 #include <llvm/Support/DynamicLibrary.h>
 
 #include <half.hpp>
+#include <math.h>
 
 namespace vertexai {
 namespace tile {
@@ -20,13 +21,23 @@ half_float::half f2h(float n) { return half_float::half_cast<half_float::half>(n
 typedef struct {
   float d;
 } custom;
+#define MARGIN 1
 custom as_custom(float a, int b) {
   custom c;
-  c.d = a;
+  c.d = a * MARGIN;
   return c;
 }
+custom as_custom_int(int a, int b) {
+  return as_custom((float) a, b);
+}
 float as_float(custom a, int b) {
-  return a.d;
+  return a.d/MARGIN;
+}
+float as_float_const(double a, int b) {
+  return (float) a;
+}
+float as_float_bool(bool a, int b) {
+  return (float) a;
 }
 custom add(custom a, custom b) {
   return as_custom(as_float(a, 32) + as_float(b, 32), 32);
@@ -37,11 +48,31 @@ custom sub(custom a, custom b) {
 custom mul(custom a, custom b) {
   return as_custom(as_float(a, 32) * as_float(b, 32), 32);
 }
+custom mul_const(custom a, float b) {
+  return as_custom(as_float(a, 32) * b, 32);
+}
 custom div(custom a, custom b) {
   return as_custom(as_float(a, 32) / as_float(b, 32), 32);
 }
 custom neg(custom a) {
   return as_custom(-as_float(a, 32), 32);
+}
+custom _exp(custom a) {
+  float f = as_float(a, 32);
+  return as_custom(exp(f), 32);
+}
+custom _sqrt(custom a) {
+  float f = as_float(a, 32);
+  return as_custom(sqrt(f), 32);
+}
+bool lt(custom a, custom b) {
+  return (as_float(a, 32) < as_float(b, 32));
+}
+custom select_bool_fp32_custom(bool a, float b, custom c) {
+  return (a) ? as_custom(b, 32) : c;
+}
+custom select_bool_i32_custom(bool a, int b, custom c) {
+  return (a) ? as_custom((float)b, 32) : c;
 }
 }  // namespace rt
 
@@ -56,9 +87,16 @@ llvm::JITSymbol Runtime::findSymbol(const std::string& name) {
   static std::map<std::string, llvm::JITEvaluatedSymbol> symbols{
       {"Barrier", symInfo(rt::barrier)},   {"__gnu_h2f_ieee", symInfo(rt::h2f)}, {"__gnu_f2h_ieee", symInfo(rt::f2h)},
       {"___truncsfhf2", symInfo(rt::f2h)}, {"___extendhfsf2", symInfo(rt::h2f)},
-      {"as_custom", symInfo(rt::as_custom)}, {"as_float", symInfo(rt::as_float)},
-      {"add", symInfo(rt::add)}, {"mul", symInfo(rt::mul)}, {"sub", symInfo(rt::sub)}, {"div", symInfo(rt::div)},
-      {"neg", symInfo(rt::neg)},
+      {"as_custom_fp32_i32", symInfo(rt::as_custom)}, {"as_float_custom_i32", symInfo(rt::as_float)},
+      {"as_custom_i32_i32", symInfo(rt::as_custom_int)},
+      {"as_float_i64_i32", symInfo(rt::as_float_const)}, {"as_float_bool_i32", symInfo(rt::as_float_bool)},
+      {"add_custom_custom", symInfo(rt::add)}, {"mul_custom_custom", symInfo(rt::mul)},
+      {"mul_custom_fp32", symInfo(rt::mul_const)},
+      {"sub_custom_custom", symInfo(rt::sub)}, {"div_custom_custom", symInfo(rt::div)},
+      {"lt_custom_custom", symInfo(rt::lt)}, {"select_bool_fp32_custom", symInfo(rt::select_bool_fp32_custom)},
+      {"select_bool_i32_custom", symInfo(rt::select_bool_i32_custom)},
+      {"neg_custom", symInfo(rt::neg)}, {"exp_custom", symInfo(rt::_exp)},
+      {"sqrt_custom", symInfo(rt::_sqrt)},
   };
   auto loc = symbols.find(name);
   if (loc != symbols.end()) {

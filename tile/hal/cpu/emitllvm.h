@@ -88,6 +88,7 @@ class Emit : public sem::Visitor {
   bool PointerAddition(value left, value right);
   sem::Type CommonType(const value& left, const value& right);
   sem::Type ConvergeOperands(value* left, value* right);
+  static std::string print(value& val);
   static std::string print(const llvm::Type*);
 
   llvm::LLVMContext& context_;
