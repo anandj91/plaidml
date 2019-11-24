@@ -21,7 +21,7 @@ half_float::half f2h(float n) { return half_float::half_cast<half_float::half>(n
 typedef struct {
   float d;
 } custom;
-#define MARGIN 1
+#define MARGIN 1.0f
 custom as_custom(float a, int b) {
   custom c;
   c.d = a * MARGIN;
@@ -31,7 +31,7 @@ custom as_custom_int(int a, int b) {
   return as_custom((float) a, b);
 }
 float as_float(custom a, int b) {
-  return a.d/MARGIN;
+  return a.d / MARGIN;
 }
 float as_float_const(double a, int b) {
   return (float) a;
@@ -40,33 +40,64 @@ float as_float_bool(bool a, int b) {
   return (float) a;
 }
 custom add(custom a, custom b) {
-  return as_custom(as_float(a, 32) + as_float(b, 32), 32);
+  float ta = as_float(a, 32);
+  float tb = as_float(b, 32);
+  float r = ta + tb;
+  VLOG(1) << "add, " << ta << ", " << tb << ", " << r;
+  return as_custom(r, 32);
 }
 custom sub(custom a, custom b) {
-  return as_custom(as_float(a, 32) - as_float(b, 32), 32);
+  float ta = as_float(a, 32);
+  float tb = as_float(b, 32);
+  float r = ta - tb;
+  VLOG(1) << "sub, " << ta << ", " << tb << ", " << r;
+  return as_custom(r, 32);
 }
 custom mul(custom a, custom b) {
-  return as_custom(as_float(a, 32) * as_float(b, 32), 32);
+  float ta = as_float(a, 32);
+  float tb = as_float(b, 32);
+  float r = ta * tb;
+  VLOG(1) << "mul, " << ta << ", " << tb << ", " << r;
+  return as_custom(r, 32);
 }
 custom mul_const(custom a, float b) {
-  return as_custom(as_float(a, 32) * b, 32);
+  float ta = as_float(a, 32);
+  float tb = b;
+  float r = ta * tb;
+  VLOG(1) << "mul_const, " << ta << ", " << tb << ", " << r;
+  return as_custom(r, 32);
 }
 custom div(custom a, custom b) {
-  return as_custom(as_float(a, 32) / as_float(b, 32), 32);
+  float ta = as_float(a, 32);
+  float tb = as_float(b, 32);
+  float r = ta / tb;
+  VLOG(1) << "div, " << ta << ", " << tb << ", " << r;
+  return as_custom(r, 32);
 }
 custom neg(custom a) {
-  return as_custom(-as_float(a, 32), 32);
+  float ta = as_float(a, 32);
+  float r = - ta;
+  VLOG(1) << "neg, " << ta << ", " << 0 << ", " << r;
+  return as_custom(r, 32);
 }
 custom _exp(custom a) {
-  float f = as_float(a, 32);
-  return as_custom(exp(f), 32);
+  float ta = as_float(a, 32);
+  float r = exp(ta);
+  VLOG(1) << "exp, " << ta << ", " << 0 << ", " << r;
+  return as_custom(r, 32);
 }
 custom _sqrt(custom a) {
-  float f = as_float(a, 32);
-  return as_custom(sqrt(f), 32);
+  float ta = as_float(a, 32);
+  float r = sqrt(ta);
+  VLOG(1) << "sqrt, " << ta << ", " << 0 << ", " << r;
+  return as_custom(r, 32);
 }
 bool lt(custom a, custom b) {
-  return (as_float(a, 32) < as_float(b, 32));
+  float ta = as_float(a, 32);
+  float tb = as_float(b, 32);
+  bool r = (ta < tb);
+  VLOG(1) << "lt, " << ta << ", " << tb << ", " << r;
+  return r;
 }
 custom select_bool_fp32_custom(bool a, float b, custom c) {
   return (a) ? as_custom(b, 32) : c;
