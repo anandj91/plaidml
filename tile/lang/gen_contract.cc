@@ -304,6 +304,13 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
         case Binding::FCONST:
           input = std::make_shared<sem::FloatConst>(bindings[i]->fconst);
           break;
+        case Binding::CCONST: {
+          input = std::make_shared<sem::FloatConst>(bindings[i]->fconst);
+          auto width = std::make_shared<sem::IntConst>(32);
+          input = std::make_shared<sem::CallExpr>(sem::CallExpr::Function::AS_CUST,
+                    std::vector<sem::ExprPtr>({input, width}), DataType::CUSTOM);
+          break;
+        }
         case Binding::TUPLE:
           throw std::runtime_error("Cannot pass tuple to contraction");
       }
@@ -527,6 +534,18 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
             sem::Type type = {sem::Type::VALUE, DataType::FLOAT32, op.agg_vec};
             val = _Cast(type, val);
           }
+          inexprs.push_back(val);
+          break;
+        }
+        case Binding::CCONST: {
+          sem::ExprPtr val = std::make_shared<sem::FloatConst>(tin.fconst);
+          if (op.agg_vec > 1) {
+            sem::Type type = {sem::Type::VALUE, DataType::FLOAT32, op.agg_vec};
+            val = _Cast(type, val);
+          }
+          auto width = std::make_shared<sem::IntConst>(32);
+          val = std::make_shared<sem::CallExpr>(sem::CallExpr::Function::AS_CUST,
+                    std::vector<sem::ExprPtr>({val, width}), DataType::CUSTOM);
           inexprs.push_back(val);
           break;
         }

@@ -42,6 +42,14 @@ std::string Binding::key() const {
       }
       return c;
     }
+    case Binding::CCONST: {
+      std::string c = DoubleToString(fconst);
+      if (c.find_first_of(".e") == std::string::npos) {
+        c += ".0";
+      }
+      c += "c";
+      return c;
+    }
     case Binding::TUPLE:
     default:
       throw std::logic_error{"Invalid binding for key"};
@@ -694,6 +702,9 @@ void TypeCheck(Program* prog, Bindings* vars) {
             break;
           case Binding::FCONST:
             dins.push_back(vars->at(s).fconst);
+            break;
+          case Binding::CCONST:
+            all_const = false;
             break;
         }
       }

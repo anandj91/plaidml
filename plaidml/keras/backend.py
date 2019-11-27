@@ -1406,7 +1406,11 @@ def separable_conv2d(x,
 
 
 def set_floatx(dtype):
-    keras_set_floatx(dtype)
+    npdtype = dtype
+    if dtype == plaidml.DType.CUSTOM:
+        npdtype = 'float32'
+
+    keras_set_floatx(npdtype)
     plaidml.set_floatx(ptile.convert_np_dtype_to_pml(dtype))
 
 

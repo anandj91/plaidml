@@ -90,7 +90,7 @@ NUMPY_DTYPE_TO_PLAIDML = {
     'uint16': plaidml.DType.UINT16,
     'uint32': plaidml.DType.UINT32,
     'uint64': plaidml.DType.UINT64,
-    plaidml._NP_CUSTOM.name: plaidml.DType.CUSTOM,
+    'custom': plaidml.DType.CUSTOM,
 }
 
 PLAIDML_DTYPE_TO_NUMPY = dict([[v, k] for k, v in NUMPY_DTYPE_TO_PLAIDML.items()])

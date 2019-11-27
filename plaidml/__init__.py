@@ -826,8 +826,6 @@ _CTYPES = {
     DType.CUSTOM: _C_Custom,
 }
 
-_NP_CUSTOM = np.dtype([('d', np.float32)])
-
 _NP_TYPES = {
     DType.FLOAT16: 'float16',
     DType.FLOAT32: 'float32',
@@ -837,7 +835,7 @@ _NP_TYPES = {
     DType.INT64: 'int64',
     DType.UINT32: 'uint32',
     DType.UINT64: 'uint64',
-    DType.CUSTOM: _NP_CUSTOM.name,
+    DType.CUSTOM: 'custom',
 }
 
 
@@ -1289,9 +1287,12 @@ class Tensor(Var):
 
     def as_ndarray(self, ctx):
         if self._ndarray is None:
+            npdtype = _NP_TYPES[self.shape.dtype]
+            if self.shape.dtype == DType.CUSTOM:
+                npdtype = 'float32'
             self._ndarray = np.ndarray(
                 tuple(dim.size for dim in self.shape.dimensions),
-                dtype=_NP_TYPES[self.shape.dtype])
+                dtype=npdtype)
         with self.mmap_current() as view:
             view.copy_to_ndarray(self._ndarray)
         return self._ndarray

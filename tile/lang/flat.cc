@@ -50,7 +50,9 @@ static std::string NormalizeName(std::map<std::string, std::string>* map, const 
   std::string out_name;
   if (it == map->end()) {
     if (!is_def) {
-      if (vars.at(name).tag == Binding::ICONST || vars.at(name).tag == Binding::FCONST) {
+      if (vars.at(name).tag == Binding::ICONST
+          || vars.at(name).tag == Binding::FCONST
+          || vars.at(name).tag == Binding::CCONST) {
         return vars.at(name).key();
       }
       throw std::runtime_error("Use of " + name + " before def");

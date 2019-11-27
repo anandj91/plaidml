@@ -15,10 +15,17 @@ namespace lang {
 struct Binding {
   explicit Binding(const TensorShape& shape) : tag(TENSOR), shape(shape) {}
   explicit Binding(int64_t iconst) : tag(ICONST), iconst(iconst) { shape.type = DataType::INT32; }
-  explicit Binding(double fconst, DataType dtype) : tag(FCONST), fconst(fconst) { shape.type = dtype; }
+  explicit Binding(double fconst, DataType dtype) : fconst(fconst) {
+    if (dtype == DataType::CUSTOM) {
+      tag = CCONST;
+    } else {
+      tag = FCONST;
+    }
+    shape.type = dtype;
+  }
   explicit Binding(const std::vector<Binding>& tuple) : tag(TUPLE), tuple(tuple) {}
 
-  enum { TENSOR, ICONST, FCONST, TUPLE } tag;
+  enum { TENSOR, ICONST, FCONST, CCONST, TUPLE } tag;
   TensorShape shape;
   int64_t iconst;
   double fconst;
@@ -39,6 +46,9 @@ inline MAKE_LOGGABLE(Binding, t, os) {
       break;
     case Binding::FCONST:
       os << "F:" << t.fconst;
+      break;
+    case Binding::CCONST:
+      os << "C:" << t.fconst;
       break;
     case Binding::TUPLE:
       os << "T:" << t.tuple.size();
