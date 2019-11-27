@@ -1674,13 +1674,8 @@ def variable(value, dtype=None, name=None, constraint=None):
         view.copy_from_ndarray(value)
         view.writeback()
 
-    val = ptile.Value.from_var(tensor, value.shape, ptile.convert_np_dtype_to_pml(dtype),
+    return ptile.Value.from_var(tensor, value.shape, ptile.convert_np_dtype_to_pml(dtype),
                                 _prepend_name_scope(name, 'tensor_variable'))
-    if dtype == plaidml.DType.CUSTOM:
-        val = cast(val, dtype)
-
-    return val
-
 
 def zeros(shape, dtype=floatx(), name=None):
     return constant(0.0, shape=shape, dtype=dtype, name=_prepend_name_scope(name, 'zeros'))

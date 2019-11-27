@@ -25,19 +25,28 @@ typedef struct {
 custom as_custom(float a, int b) {
   custom c;
   c.d = a * MARGIN;
+  VLOG(2) << "as_custom, " << a << ", " << b << ", " << c.d;
   return c;
 }
 custom as_custom_int(int a, int b) {
   return as_custom((float) a, b);
 }
+custom as_custom_double(double a, int b) {
+  return as_custom((float) a, b);
+}
 float as_float(custom a, int b) {
-  return a.d / MARGIN;
+  float r = a.d / MARGIN;
+  VLOG(2) << "as_float, " << a.d << ", " << b << ", " << r;
+  return r;
 }
 float as_float_const(double a, int b) {
   return (float) a;
 }
 float as_float_bool(bool a, int b) {
   return (float) a;
+}
+float as_float_float(float a, int b) {
+  return a;
 }
 custom add(custom a, custom b) {
   float ta = as_float(a, 32);
@@ -118,8 +127,9 @@ llvm::JITSymbol Runtime::findSymbol(const std::string& name) {
   static std::map<std::string, llvm::JITEvaluatedSymbol> symbols{
       {"Barrier", symInfo(rt::barrier)},   {"__gnu_h2f_ieee", symInfo(rt::h2f)}, {"__gnu_f2h_ieee", symInfo(rt::f2h)},
       {"___truncsfhf2", symInfo(rt::f2h)}, {"___extendhfsf2", symInfo(rt::h2f)},
-      {"as_custom_fp32_i32", symInfo(rt::as_custom)}, {"as_float_custom_i32", symInfo(rt::as_float)},
-      {"as_custom_i32_i32", symInfo(rt::as_custom_int)},
+      {"as_custom_fp32_i32", symInfo(rt::as_custom)},
+      {"as_custom_i32_i32", symInfo(rt::as_custom_int)}, {"as_custom_fp64_i32", symInfo(rt::as_custom_double)},
+      {"as_float_fp32_i32", symInfo(rt::as_float_float)}, {"as_float_custom_i32", symInfo(rt::as_float)},
       {"as_float_i64_i32", symInfo(rt::as_float_const)}, {"as_float_bool_i32", symInfo(rt::as_float_bool)},
       {"add_custom_custom", symInfo(rt::add)}, {"mul_custom_custom", symInfo(rt::mul)},
       {"mul_custom_fp32", symInfo(rt::mul_const)},

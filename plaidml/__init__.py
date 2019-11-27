@@ -113,6 +113,10 @@ class _C_Gradient(ctypes.Structure):
     pass
 
 
+class _C_Custom(ctypes.Structure):
+    _fields_ = [("d", ctypes.c_float)]
+
+
 _ENUM_DEVICES_FUNCTYPE = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p,
                                           ctypes.POINTER(_C_DeviceEnumerator))
 _MAP_BUFFER_FUNCTYPE = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.POINTER(_C_Mapping))
@@ -819,8 +823,10 @@ _CTYPES = {
     DType.FLOAT16: ctypes.c_uint16,  # TODO: Implement half-width float wrapper
     DType.FLOAT32: ctypes.c_float,
     DType.FLOAT64: ctypes.c_double,
-    DType.CUSTOM: ctypes.c_float
+    DType.CUSTOM: _C_Custom,
 }
+
+_NP_CUSTOM = np.dtype([('d', np.float32)])
 
 _NP_TYPES = {
     DType.FLOAT16: 'float16',
@@ -831,6 +837,7 @@ _NP_TYPES = {
     DType.INT64: 'int64',
     DType.UINT32: 'uint32',
     DType.UINT64: 'uint64',
+    DType.CUSTOM: _NP_CUSTOM.name,
 }
 
 
@@ -1096,9 +1103,10 @@ class Var(object):
 
 class _View(object):
 
-    def __init__(self, ctx, mapping, dtype, ctype, length, shape, buf):
+    def __init__(self, ctx, dev, mapping, dtype, ctype, length, shape, buf):
         self._as_parameter_ = mapping
         self._dtype = dtype
+        self._dev = dev
         self._ctype = ctype
         self._base = ctypes.cast(_lib().plaidml_get_mapping_base(ctx, self), ctypes.POINTER(ctype))
         self.contents = self._base.contents
@@ -1108,7 +1116,8 @@ class _View(object):
         else:
             self._length = 0
         self._shape = shape
-        self._buf = buf
+        self._buf = None
+        self._buffer = buf
 
     def __del__(self):
         if self._buf:
@@ -1191,13 +1200,47 @@ class _View(object):
                 src = src.astype('float16')
             src = src.view(dtype='uint16')
         dst = np.ctypeslib.as_array(self._base, shape=src.shape)
-        np.copyto(dst, src)
+        try:
+            np.copyto(dst, src)
+        except TypeError:
+            assert(self._ctype == _C_Custom)
+            import plaidml.tile as ptile
+            x = ptile.Value.from_python_value(src)
+            self.copyto(dst, x, DType.CUSTOM)
 
     def copy_to_ndarray(self, dst):
         src = np.ctypeslib.as_array(self._base, shape=dst.shape)
         if self._dtype == DType.FLOAT16:
             src = src.view(dtype='float16')
-        np.copyto(dst, src)
+        try:
+            np.copyto(dst, src)
+        except TypeError:
+            assert(self._ctype == _C_Custom)
+            import plaidml.tile as ptile
+            tensor = Tensor(self._dev, self._shape, self._buffer)
+            x = ptile.Value.from_var(tensor, src.shape)
+            self.copyto(dst, x, dst.dtype)
+
+    def copyto(self, dst, src, dtype):
+        import plaidml.op as op
+        import plaidml.tile as ptile
+
+        if not isinstance(src, ptile.Value):
+            raise Exception("Source is not ptile.Value")
+        if not isinstance(dst, np.ndarray):
+            raise Exception("Destination is not ndarray")
+
+        dtype = ptile.convert_np_dtype_to_pml(dtype)
+        x = op.cast(src, dtype)
+        func = ptile.compose(self._ctx, self._dev, [], [('out', x)], name='castto')
+        invoker = plaidml.Invoker(self._ctx, func)
+        shape = invoker.get_output_shape('out')
+        tensor = Tensor(self._dev, shape)
+        invoker.set_output('out', tensor)
+        invoker.invoke()
+        out_shape = tuple(x.size for x in shape.dimensions)
+        with tensor.mmap_current() as view:
+            view.copy_to_ndarray(dst)
 
     def __len__(self):
         return self._length
@@ -1213,6 +1256,7 @@ class Tensor(Var):
         self._shape = shape
         self._ndarray = None
         self._qparams = None
+        self._dev = dev
         if copy_buffer:
             self._buffer = copy_buffer
         else:
@@ -1232,15 +1276,15 @@ class Tensor(Var):
     def mmap_current(self):
         mapping = _lib().plaidml_map_buffer_current(self.buffer,
                                                     ctypes.cast(None, _MAP_BUFFER_FUNCTYPE), None)
-        yield _View(self.buffer._ctx, mapping, self.shape.dtype, self.shape.ctype,
-                    _lib().plaidml_get_shape_element_count(self.shape), self.shape, None)
+        yield _View(self.buffer._ctx, self._dev, mapping, self.shape.dtype, self.shape.ctype,
+                    _lib().plaidml_get_shape_element_count(self.shape), self.shape, self.buffer)
         _lib().plaidml_free_mapping(mapping)
 
     @contextlib.contextmanager
     def mmap_discard(self, ctx):
         mapping = _lib().plaidml_map_buffer_discard(ctx, self.buffer)
-        yield _View(ctx, mapping, self.shape.dtype, self.shape.ctype,
-                    _lib().plaidml_get_shape_element_count(self.shape), self.shape, None)
+        yield _View(ctx, self._dev, mapping, self.shape.dtype, self.shape.ctype,
+                    _lib().plaidml_get_shape_element_count(self.shape), self.shape, self.buffer)
         _lib().plaidml_free_mapping(mapping)
 
     def as_ndarray(self, ctx):
