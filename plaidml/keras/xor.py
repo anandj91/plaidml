@@ -11,7 +11,7 @@ from keras.layers import Layer
 base_type = plaidml.DType.FLOAT32
 new_type = plaidml.DType.CUSTOM
 
-plaidml._internal_set_vlog(4)
+#plaidml._internal_set_vlog(4)
 
 # the four different states of the XOR gate
 training_data = np.array([[0,0],[0,1],[1,0],[1,1]], "float32")
@@ -39,6 +39,6 @@ model.compile(loss='mean_squared_error',
               optimizer='adam',
               metrics=['binary_accuracy'])
 
-model.fit(training_data, target_data, epochs=1, verbose=2)
+model.fit(training_data, target_data, epochs=100, verbose=2)
 
-print('PREDICTION', model.predict(training_data).round())
+print('PREDICTION', model.predict(training_data))
