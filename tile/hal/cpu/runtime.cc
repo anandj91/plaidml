@@ -28,6 +28,9 @@ custom as_custom(float a, int b) {
   VLOG(2) << "as_custom, " << a << ", " << b << ", " << c.d;
   return c;
 }
+custom as_custom_long(long a, int b) {
+  return as_custom((float) a, b);
+}
 custom as_custom_int(int a, int b) {
   return as_custom((float) a, b);
 }
@@ -127,7 +130,7 @@ llvm::JITSymbol Runtime::findSymbol(const std::string& name) {
   static std::map<std::string, llvm::JITEvaluatedSymbol> symbols{
       {"Barrier", symInfo(rt::barrier)},   {"__gnu_h2f_ieee", symInfo(rt::h2f)}, {"__gnu_f2h_ieee", symInfo(rt::f2h)},
       {"___truncsfhf2", symInfo(rt::f2h)}, {"___extendhfsf2", symInfo(rt::h2f)},
-      {"as_custom_fp32_i32", symInfo(rt::as_custom)},
+      {"as_custom_fp32_i32", symInfo(rt::as_custom)}, {"as_custom_i64_i32", symInfo(rt::as_custom_long)},
       {"as_custom_i32_i32", symInfo(rt::as_custom_int)}, {"as_custom_fp64_i32", symInfo(rt::as_custom_double)},
       {"as_float_fp32_i32", symInfo(rt::as_float_float)}, {"as_float_custom_i32", symInfo(rt::as_float)},
       {"as_float_i64_i32", symInfo(rt::as_float_const)}, {"as_float_bool_i32", symInfo(rt::as_float_bool)},
