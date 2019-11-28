@@ -306,9 +306,8 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
           break;
         case Binding::CCONST: {
           input = std::make_shared<sem::FloatConst>(bindings[i]->fconst);
-          auto width = std::make_shared<sem::IntConst>(32);
-          input = std::make_shared<sem::CallExpr>(sem::CallExpr::Function::AS_CUST,
-                    std::vector<sem::ExprPtr>({input, width}), DataType::CUSTOM);
+          sem::Type custtype = {sem::Type::VALUE, DataType::CUSTOM};
+          input = _Cast(custtype, input);
           break;
         }
         case Binding::TUPLE:
@@ -543,9 +542,8 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
             sem::Type type = {sem::Type::VALUE, DataType::FLOAT32, op.agg_vec};
             val = _Cast(type, val);
           }
-          auto width = std::make_shared<sem::IntConst>(32);
-          val = std::make_shared<sem::CallExpr>(sem::CallExpr::Function::AS_CUST,
-                    std::vector<sem::ExprPtr>({val, width}), DataType::CUSTOM);
+          sem::Type custtype = {sem::Type::VALUE, DataType::CUSTOM, op.agg_vec};
+          val = _Cast(custtype, val);
           inexprs.push_back(val);
           break;
         }
@@ -572,12 +570,15 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
           inexprs[0] = (inexprs[0] != 0);
           break;
       }
-      if (vars.at(post_op.output).shape.type == DataType::CUSTOM) {
-        opexpr = std::make_shared<sem::CallExpr>(_("select"), inexprs,
-                      vars.at(post_op.output).shape.type);
-      } else {
-        opexpr = _Cond(inexprs[0], inexprs[1], inexprs[2]);
+      auto _true = inexprs[1];
+      auto _false = inexprs[2];
+      sem::Type declatype{sem::Type::VALUE, vars.at(post_op.output).shape.type};
+      if (vars.at(post_op.inputs[1]).shape.type == DataType::CUSTOM
+          || vars.at(post_op.inputs[2]).shape.type == DataType::CUSTOM) {
+        _true = _Cast(declatype, _true);
+        _false = _Cast(declatype, _false);
       }
+      opexpr = _Cond(inexprs[0], _true, _false);
     } else if (post_op.f.fn == "neg") {
       opexpr = std::make_shared<sem::UnaryExpr>("-", inexprs[0]);
     } else if (post_op.f.fn == "bit_not") {

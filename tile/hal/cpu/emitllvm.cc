@@ -732,7 +732,13 @@ void Emit::Visit(const sem::LimitConst& n) {
     case DataType::FLOAT64:
       LimitConstFP(builder_.getDoubleTy(), n.which);
       break;
-    case DataType::CUSTOM:
+    case DataType::CUSTOM: {
+      auto l = std::make_shared<sem::LimitConst>(n.which, DataType::FLOAT32);
+      auto w = std::make_shared<sem::IntConst>(32);
+      sem::CallExpr call(sem::CallExpr::Function::AS_CUST, std::vector<sem::ExprPtr>({l, w}), DataType::CUSTOM);
+      Emit::Visit(call);
+      break;
+    }
     case DataType::INT128:
     case DataType::PRNG:
     case DataType::INVALID:

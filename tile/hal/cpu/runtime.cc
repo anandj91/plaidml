@@ -127,6 +127,13 @@ bool eq(custom a, custom b) {
   VLOG(1) << "eq, " << ta << ", " << tb << ", " << r;
   return r;
 }
+bool gt(custom a, custom b) {
+  float ta = as_float(a, 32);
+  float tb = as_float(b, 32);
+  bool r = (ta > tb);
+  VLOG(1) << "gt, " << ta << ", " << tb << ", " << r;
+  return r;
+}
 custom select_bool_fp32_custom(bool a, float b, custom c) {
   return (a) ? as_custom(b, 32) : c;
 }
@@ -135,6 +142,9 @@ custom select_bool_i32_custom(bool a, int b, custom c) {
 }
 custom select_bool_custom_custom(bool a, custom b, custom c) {
   return (a) ? b : c;
+}
+custom select_bool_custom_fp32(bool a, custom b, float c) {
+  return (a) ? b : as_custom(c, 32);
 }
 }  // namespace rt
 
@@ -158,9 +168,11 @@ llvm::JITSymbol Runtime::findSymbol(const std::string& name) {
       {"mul_custom_fp32", symInfo(rt::mul_const)},
       {"sub_custom_custom", symInfo(rt::sub)}, {"div_custom_custom", symInfo(rt::div)},
       {"lt_custom_custom", symInfo(rt::lt)}, {"eq_custom_custom", symInfo(rt::eq)},
+      {"gt_custom_custom", symInfo(rt::gt)},
       {"select_bool_fp32_custom", symInfo(rt::select_bool_fp32_custom)},
       {"select_bool_i32_custom", symInfo(rt::select_bool_i32_custom)},
       {"select_bool_custom_custom", symInfo(rt::select_bool_custom_custom)},
+      {"select_bool_custom_fp32", symInfo(rt::select_bool_custom_fp32)},
       {"neg_custom", symInfo(rt::neg)}, {"exp_custom", symInfo(rt::_exp)},
       {"sqrt_custom", symInfo(rt::_sqrt)}, {"round_custom", symInfo(rt::_round)},
   };

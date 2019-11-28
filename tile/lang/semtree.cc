@@ -11,6 +11,7 @@ void Type::log(el::base::type::ostream_t& os) const { os << to_string(*this); }
 
 std::string to_string(const Type& ty) {
   std::ostringstream os;
+  /*
   if (ty.region == Type::LOCAL) {
     os << "local ";
   } else if (ty.region == Type::GLOBAL) {
@@ -25,6 +26,7 @@ std::string to_string(const Type& ty) {
   if (ty.base == Type::INDEX) {
     os << "index ";
   }
+  */
   if (ty.base != Type::TVOID && ty.base != Type::INDEX) {
     os << to_string(ty.dtype);
   }
