@@ -19,7 +19,7 @@ void barrier() {}
 float h2f(half_float::half n) { return n; }
 half_float::half f2h(float n) { return half_float::half_cast<half_float::half>(n); }
 typedef struct {
-  uint32_t d;
+  uint32_t d = 0;
 } custom;
 #define MARGIN 1.0f
 void copy32(char* dst, char* src) {
@@ -36,7 +36,7 @@ void copy16(char* dst, char* src) {
 custom as_custom(float a, int b) {
   custom c;
   copy32((char*)&c.d, (char*)&a);
-  VLOG(2) << "as_custom, " << a << ", " << b << ", " << c.d;
+  VLOG(2) << "as_custom, " << a << ", " << b << ", " << std::hex << c.d << std::dec;
   return c;
 }
 custom as_custom_long(long a, int b) {
@@ -54,7 +54,7 @@ custom as_custom_custom(custom a, int b) {
 float as_float(custom a, int b) {
   float r;
   copy32((char*)&r, (char*)&a.d);
-  VLOG(2) << "as_float, " << a.d << ", " << b << ", " << r;
+  VLOG(2) << "as_float, " << std::hex << a.d << std::dec << ", " << b << ", " << r;
   return r;
 }
 float as_float_const(double a, int b) {

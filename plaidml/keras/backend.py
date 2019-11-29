@@ -705,6 +705,7 @@ def get_uid(prefix=''):
 
 
 def get_value(x):
+    x = cast(x, plaidml.DType.FLOAT32)
     func = ptile.compose(_ctx, _device(), [], [('out', x)], name='get_value')
     invoker = plaidml.Invoker(_ctx, func)
     shape = invoker.get_output_shape('out')
