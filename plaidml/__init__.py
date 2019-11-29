@@ -114,7 +114,7 @@ class _C_Gradient(ctypes.Structure):
 
 
 class _C_Custom(ctypes.Structure):
-    _fields_ = [("d", ctypes.c_float)]
+    _fields_ = [("d", ctypes.c_uint32)]
 
 
 _ENUM_DEVICES_FUNCTYPE = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p,

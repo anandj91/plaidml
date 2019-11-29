@@ -1008,7 +1008,7 @@ llvm::Type* Emit::CType(const sem::Type& type) {
       t = llvm::Type::getFloatTy(context_);
       break;
     case DataType::CUSTOM:
-      static llvm::ArrayRef<llvm::Type*> types(llvm::Type::getFloatTy(context_));
+      static llvm::ArrayRef<llvm::Type*> types(llvm::Type::getInt32Ty(context_));
       static auto s_type = llvm::StructType::create(context_, types, "custom", true);
       t = s_type;
       break;
