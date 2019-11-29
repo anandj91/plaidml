@@ -35,7 +35,8 @@ void copy16(char* dst, char* src) {
 
 custom as_custom(float a, int b) {
   custom c;
-  copy32((char*)&c.d, (char*)&a);
+  half_float::half h = f2h(a);
+  copy16((char*)&c.d, (char*)&h);
   VLOG(2) << "as_custom, " << a << ", " << b << ", " << c.d;
   return c;
 }
@@ -52,8 +53,9 @@ custom as_custom_custom(custom a, int b) {
   return a;
 }
 float as_float(custom a, int b) {
-  float r;
-  copy32((char*)&r, (char*)&a.d);
+  half_float::half h;
+  copy16((char*)&h, (char*)&a.d);
+  float r = h2f(h);
   VLOG(2) << "as_float, " << a.d << ", " << b << ", " << r;
   return r;
 }
