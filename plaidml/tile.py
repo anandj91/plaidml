@@ -90,6 +90,7 @@ NUMPY_DTYPE_TO_PLAIDML = {
     'uint16': plaidml.DType.UINT16,
     'uint32': plaidml.DType.UINT32,
     'uint64': plaidml.DType.UINT64,
+    'custom': plaidml.DType.CUSTOM,
 }
 
 PLAIDML_DTYPE_TO_NUMPY = dict([[v, k] for k, v in NUMPY_DTYPE_TO_PLAIDML.items()])
@@ -890,6 +891,13 @@ class Value(_ShapelessValue):
             return self
         return binary_op(self, other, 'L + R', name='Add')
 
+    def __iadd__(self, other):
+        if isinstance(other, six.integer_types) and other == 0:
+            return self
+        if isinstance(other, float) and other == 0.0:
+            return self
+        return binary_op(self, other, 'L + R', dtype=self.shape.dtype, name='iAdd')
+
     def __radd__(self, other):
         if isinstance(other, six.integer_types) and other == 0:
             return self
@@ -899,6 +907,9 @@ class Value(_ShapelessValue):
 
     def __and__(self, other):
         return binary_op(self, other, 'L & R', name='And')
+
+    def __iand__(self, other):
+        return binary_op(self, other, 'L & R', dtype=self.shape.dtype, name='iAnd')
 
     def __rand__(self, other):
         return binary_op(other, self, 'L & R', name='RevAnd')
@@ -910,6 +921,13 @@ class Value(_ShapelessValue):
             return self
         return binary_op(self, other, 'L / R', name='Div')
 
+    def __idiv__(self, other):
+        if isinstance(other, six.integer_types) and other == 1:
+            return self
+        if isinstance(other, float) and other == 1.0:
+            return self
+        return binary_op(self, other, 'L / R', dtype=self.shape.dtype, name='iDiv')
+
     def __rdiv__(self, other):
         return binary_op(other, self, 'L / R', name='RevDiv')
 
@@ -920,6 +938,13 @@ class Value(_ShapelessValue):
             return self
         return binary_op(self, other, 'floor(L / R)', name='FloorDiv')
 
+    def __ifloordiv__(self, other):
+        if isinstance(other, six.integer_types) and other == 1:
+            return self
+        if isinstance(other, float) and other == 1.0:
+            return self
+        return binary_op(self, other, 'floor(L / R)', dtype=self.shape.dtype, name='FloorDiv')
+
     def __rfloordiv__(self, other):
         return binary_op(other, self, 'floor(L / R)', name='RevFloorDiv')
 
@@ -929,10 +954,10 @@ class Value(_ShapelessValue):
     def __lshift__(self, other):
         if isinstance(other, six.integer_types) and other == 0:
             return self
-        return binary_op(self, other, 'L << R', name='LShift')
+        return binary_op(self, other, 'L << R', dtype=self.shape.dtype, name='LShift')
 
     def __rlshift__(self, other):
-        return binary_op(other, self, 'L << R', name='RevLShift')
+        return binary_op(other, self, 'L << R', dtype=self.shape.dtype, name='RevLShift')
 
     def __mul__(self, other):
         if isinstance(other, six.integer_types) and other == 1:
@@ -940,6 +965,13 @@ class Value(_ShapelessValue):
         if isinstance(other, float) and other == 1.0:
             return self
         return binary_op(self, other, 'L * R', name='Mul')
+
+    def __imul__(self, other):
+        if isinstance(other, six.integer_types) and other == 1:
+            return self
+        if isinstance(other, float) and other == 1.0:
+            return self
+        return binary_op(self, other, 'L * R', dtype=self.shape.dtype, name='iMul')
 
     def __rmul__(self, other):
         if isinstance(other, six.integer_types) and other == 1:
@@ -954,6 +986,9 @@ class Value(_ShapelessValue):
     def __or__(self, other):
         return binary_op(self, other, 'L | R', name='Or')
 
+    def __ior__(self, other):
+        return binary_op(self, other, 'L | R', dtype=self.shape.dtype, name='iOr')
+
     def __ror__(self, other):
         return binary_op(other, self, 'L | R', name='RevOr')
 
@@ -963,10 +998,10 @@ class Value(_ShapelessValue):
     def __rshift__(self, other):
         if isinstance(other, six.integer_types) and other == 0:
             return self
-        return binary_op(self, other, 'L >> R', name='RShift')
+        return binary_op(self, other, 'L >> R', dtype=self.shape.dtype, name='RShift')
 
     def __rrshift__(self, other):
-        return binary_op(other, self, 'L >> R', name='RevRShift')
+        return binary_op(other, self, 'L >> R', dtype=self.shape.dtype, name='RevRShift')
 
     def __sub__(self, other):
         if isinstance(other, six.integer_types) and other == 0:
@@ -974,6 +1009,13 @@ class Value(_ShapelessValue):
         if isinstance(other, float) and other == 0.0:
             return self
         return binary_op(self, other, 'L - R', name='Sub')
+
+    def __isub__(self, other):
+        if isinstance(other, six.integer_types) and other == 0:
+            return self
+        if isinstance(other, float) and other == 0.0:
+            return self
+        return binary_op(self, other, 'L - R', dtype=self.shape.dtype, name='iSub')
 
     def __rsub__(self, other):
         if isinstance(other, six.integer_types) and other == 0:
@@ -989,11 +1031,21 @@ class Value(_ShapelessValue):
             return self
         return binary_op(self, other, 'L / R', name='TrueDiv')
 
+    def __itruediv__(self, other):
+        if isinstance(other, six.integer_types) and other == 1:
+            return self
+        if isinstance(other, float) and other == 1.0:
+            return self
+        return binary_op(self, other, 'L / R', dtype=self.shape.dtype, name='iTrueDiv')
+
     def __rtruediv__(self, other):
         return binary_op(other, self, 'L / R', name='RevTrueDiv')
 
     def __xor__(self, other):
         return binary_op(self, other, 'L ^ R', name='Xor')
+
+    def __ixor__(self, other):
+        return binary_op(self, other, 'L ^ R', dtype=self.shape.dtype, name='iXor')
 
     def __rxor__(self, other):
         return binary_op(other, self, 'L ^ R', name='RevXor')
@@ -1200,6 +1252,7 @@ DTYPE_INFOS = {
     plaidml.DType.FLOAT16: DTypeInfo(base='float', width=2),
     plaidml.DType.FLOAT32: DTypeInfo(base='float', width=4),
     plaidml.DType.FLOAT64: DTypeInfo(base='float', width=8),
+    plaidml.DType.CUSTOM: DTypeInfo(base='custom', width=4),
 }
 
 INFO_DTYPES = dict([[v, k] for k, v in DTYPE_INFOS.items()])
@@ -1218,7 +1271,9 @@ def common_dtype(*args):
     for dtype in args:
         current = DTYPE_INFOS[dtype]
         if best.base != current.base:
-            if best.base == 'bool':
+            if best.base == "custom" or current.base == "custom":
+                best = current if current.width > best.width else DTYPE_INFOS[plaidml.DType.CUSTOM]
+            elif best.base == 'bool':
                 best = current
             elif current.base == 'bool':
                 # Just use whatever we have so far; booleans can be coerced to anything.

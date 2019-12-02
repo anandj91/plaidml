@@ -583,7 +583,7 @@ def depthwise_conv2d(x,
 dot = op.dot
 
 
-def dropout(x, level, noise_shape=None, seed=None):
+def dropout(x, level, noise_shape=None, dtype=floatx(), seed=None):
     if noise_shape is not None:
         raise PlaidMLKerasException('Unimplemented noise shape in dropout')
 
@@ -612,6 +612,9 @@ def dropout(x, level, noise_shape=None, seed=None):
         [('O', ptile.Shape(plaidml.DType.FLOAT32, x.shape.dims))],
         side_effects=[(rng_state, n)],
         name='PrngValue').sole_output()
+
+    if ptile.convert_np_dtype_to_pml(dtype) != plaidml.DType.FLOAT32:
+        o = cast(o, dtype)
 
     return o
 
@@ -702,6 +705,7 @@ def get_uid(prefix=''):
 
 
 def get_value(x):
+    x = cast(x, plaidml.DType.FLOAT32)
     func = ptile.compose(_ctx, _device(), [], [('out', x)], name='get_value')
     invoker = plaidml.Invoker(_ctx, func)
     shape = invoker.get_output_shape('out')
@@ -1120,7 +1124,7 @@ def random_uniform(shape, minval=0.0, maxval=1.0, dtype=None, seed=None):
         side_effects=[(rng_state, n)],
         name='PrngValue').sole_output()
 
-    if dtype != 'float32':
+    if ptile.convert_np_dtype_to_pml(dtype) != plaidml.DType.FLOAT32:
         o = cast(o, dtype)
 
     o = (maxval - minval) * o

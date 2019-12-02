@@ -943,6 +943,7 @@ llvm::Type* Compiler::CType(DataType type) {
     case DataType::INT128:
     case DataType::PRNG:
     case DataType::INVALID:
+    case DataType::CUSTOM:
       throw Error("Invalid type: " + to_string(type));
   }
   return builder_.getVoidTy();
