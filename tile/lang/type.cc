@@ -603,21 +603,7 @@ void TypeCheck(Program* prog, Bindings* vars) {
         }
         int64_t bits = bitbind.iconst;
         const std::string typefamily = op.f.fn.substr(3);
-        if ("float" == typefamily) {
-          switch (bits) {
-            case 16:
-              out_type = DataType::FLOAT16;
-              break;
-            case 32:
-              out_type = DataType::FLOAT32;
-              break;
-            case 64:
-              out_type = DataType::FLOAT64;
-              break;
-            default:
-              throw std::runtime_error("Float width must be 16, 32, or 64");
-          }
-        } else if ("int" == typefamily) {
+        if ("int" == typefamily.substr(0, 3)) {
           switch (bits) {
             case 8:
               out_type = DataType::INT8;
@@ -634,7 +620,7 @@ void TypeCheck(Program* prog, Bindings* vars) {
             default:
               throw std::runtime_error("Int width must be 8, 16, 32, or 64");
           }
-        } else if ("uint" == typefamily) {
+        } else if ("uint" == typefamily.substr(0, 4)) {
           switch (bits) {
             case 8:
               out_type = DataType::UINT8;
@@ -650,6 +636,20 @@ void TypeCheck(Program* prog, Bindings* vars) {
               break;
             default:
               throw std::runtime_error("UInt width must be 8, 16, 32, or 64");
+          }
+        } else if ("float" == typefamily.substr(0, 5)) {
+          switch (bits) {
+            case 16:
+              out_type = DataType::FLOAT16;
+              break;
+            case 32:
+              out_type = DataType::FLOAT32;
+              break;
+            case 64:
+              out_type = DataType::FLOAT64;
+              break;
+            default:
+              throw std::runtime_error("Float width must be 16, 32, or 64");
           }
         }
         // compute out_type from the function name and possibly inputs[1]

@@ -1049,9 +1049,11 @@ binary_crossentropy = BinaryCrossentropy.function
 class Cast(tile.Operation):
 
     def __init__(self, x, dtype):
-        info = tile.DTYPE_INFOS[dtype]
+        to_info = tile.DTYPE_INFOS[dtype]
+        from_info = tile.DTYPE_INFOS[x.shape.dtype]
         super(Cast, self).__init__(
-            'function (I) -> (O) {{ O = as_{}(I, {}); }}'.format(info.base, info.bitwidth),
+            'function (I) -> (O) {{ O = as_{}{}_{}{}(I, {}); }}'.format(to_info.base, to_info.width,
+            from_info.base, from_info.width, to_info.bitwidth),
             [('I', x)], [('O', tile.Shape(dtype, x.shape.dims))])
 
 
