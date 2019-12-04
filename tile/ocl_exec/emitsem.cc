@@ -50,9 +50,7 @@ sem::ExprPtr SemtreeEmitter::default_intrinsic_emitter(const stripe::Intrinsic& 
   } else if (in.name == "assign" ||    //
              in.name == "ident" ||     //
              in.name == "reshape" ||   //
-             in.name == "as_float" ||  //
-             in.name == "as_int" ||    //
-             in.name == "as_uint") {
+             in.name.substr(3) == "as_") {
     opexpr = in_val(0);
   } else if (in.name == "cond") {
     opexpr = _Cond(in_val(0, false), in_val(1), in_val(2));
