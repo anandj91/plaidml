@@ -304,6 +304,12 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
         case Binding::FCONST:
           input = std::make_shared<sem::FloatConst>(bindings[i]->fconst);
           break;
+        case Binding::CCONST: {
+          input = std::make_shared<sem::FloatConst>(bindings[i]->fconst);
+          sem::Type custtype = {sem::Type::VALUE, DataType::CUSTOM};
+          input = _Cast(custtype, input);
+          break;
+        }
         case Binding::TUPLE:
           throw std::runtime_error("Cannot pass tuple to contraction");
       }
@@ -527,6 +533,17 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
             sem::Type type = {sem::Type::VALUE, DataType::FLOAT32, op.agg_vec};
             val = _Cast(type, val);
           }
+          inexprs.push_back(val);
+          break;
+        }
+        case Binding::CCONST: {
+          sem::ExprPtr val = std::make_shared<sem::FloatConst>(tin.fconst);
+          if (op.agg_vec > 1) {
+            sem::Type type = {sem::Type::VALUE, DataType::FLOAT32, op.agg_vec};
+            val = _Cast(type, val);
+          }
+          sem::Type custtype = {sem::Type::VALUE, DataType::CUSTOM, op.agg_vec};
+          val = _Cast(custtype, val);
           inexprs.push_back(val);
           break;
         }
