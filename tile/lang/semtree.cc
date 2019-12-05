@@ -66,18 +66,24 @@ void ClampExpr::Accept(Visitor& v) const { v.Visit(*this); }
 
 void CastExpr::Accept(Visitor& v) const { v.Visit(*this); }
 
-CallExpr::CallExpr(Function f, const std::vector<ExprPtr>& v) : function(f), vals(v) {
+CallExpr::CallExpr(const DataType& dt, Function f, const std::vector<ExprPtr>& v) : dtype(dt), function(f), vals(v) {
   static std::map<Function, std::string> names{
       {Function::ACOS, "acos"}, {Function::ASIN, "asin"}, {Function::ATAN, "atan"}, {Function::CEIL, "ceil"},
       {Function::COS, "cos"},   {Function::COSH, "cosh"}, {Function::EXP, "exp"},   {Function::FLOOR, "floor"},
       {Function::LOG, "log"},   {Function::MAD, "mad"},   {Function::POW, "pow"},   {Function::ROUND, "round"},
       {Function::SIN, "sin"},   {Function::SINH, "sinh"}, {Function::SQRT, "sqrt"}, {Function::TAN, "tan"},
       {Function::TANH, "tanh"},
+      {Function::AS_C4_F4, "as_custom4_float4"}, {Function::AS_F4_C4, "as_float4_custom4"},
+      {Function::ADD, "add"}, {Function::SUB, "sub"}, {Function::MUL, "mul"}, {Function::DIV, "div"},
+      {Function::LT, "lt"}, {Function::GT, "gt"}, {Function::LE, "le"}, {Function::GE, "ge"},
+      {Function::EQ, "eq"}, {Function::NEQ, "neq"},
+      {Function::NEG, "neg"},
+      {Function::SEL, "select"},
   };
   name = names.at(f);
 }
 
-CallExpr::CallExpr(ExprPtr f, const std::vector<ExprPtr>& v) : vals(v) {
+CallExpr::CallExpr(const DataType& dt, ExprPtr f, const std::vector<ExprPtr>& v) : dtype(dt), vals(v) {
   // The historical concept of CallExpr allowed for the concept of a function
   // pointer, and the semtree builder therefore constructs CallExpr using an
   // arbitrary expression as the target function. In practice, the only type
@@ -98,6 +104,12 @@ CallExpr::CallExpr(ExprPtr f, const std::vector<ExprPtr>& v) : vals(v) {
       {"log", Function::LOG},   {"mad", Function::MAD},   {"pow", Function::POW},   {"round", Function::ROUND},
       {"sin", Function::SIN},   {"sinh", Function::SINH}, {"sqrt", Function::SQRT}, {"tan", Function::TAN},
       {"tanh", Function::TANH},
+      {"as_custom4_float4", Function::AS_C4_F4}, {"as_float4_custom4", Function::AS_F4_C4},
+      {"add", Function::ADD}, {"sub", Function::SUB}, {"mul", Function::MUL}, {"div", Function::DIV},
+      {"lt", Function::LT}, {"gt", Function::GT}, {"le", Function::LE}, {"ge", Function::GE},
+      {"eq", Function::EQ}, {"neq", Function::NEQ},
+      {"neg", Function::NEG},
+      {"select", Function::SEL},
   };
   auto it = functions.find(name);
   if (it == functions.end()) {

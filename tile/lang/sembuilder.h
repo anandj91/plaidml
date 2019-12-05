@@ -38,19 +38,19 @@ class LValueHolder {
   LValueHolder operator[](ExprPtr offset) const { return LValueHolder(std::make_shared<SubscriptLVal>(v_, offset)); }
 
   ExprPtr operator()(ExprPtr val) const {
-    return std::make_shared<CallExpr>(std::make_shared<LoadExpr>(v_), std::vector<ExprPtr>{val});
+    return std::make_shared<CallExpr>(DataType::INVALID, std::make_shared<LoadExpr>(v_), std::vector<ExprPtr>{val});
   }
 
   ExprPtr operator()(ExprPtr v1, ExprPtr v2) const {
-    return std::make_shared<CallExpr>(std::make_shared<LoadExpr>(v_), std::vector<ExprPtr>{v1, v2});
+    return std::make_shared<CallExpr>(DataType::INVALID, std::make_shared<LoadExpr>(v_), std::vector<ExprPtr>{v1, v2});
   }
 
   ExprPtr operator()(ExprPtr v1, ExprPtr v2, ExprPtr v3) const {
-    return std::make_shared<CallExpr>(std::make_shared<LoadExpr>(v_), std::vector<ExprPtr>{v1, v2, v3});
+    return std::make_shared<CallExpr>(DataType::INVALID, std::make_shared<LoadExpr>(v_), std::vector<ExprPtr>{v1, v2, v3});
   }
 
   ExprPtr operator()(int val) const {
-    return std::make_shared<CallExpr>(std::make_shared<LoadExpr>(v_),
+    return std::make_shared<CallExpr>(DataType::INVALID, std::make_shared<LoadExpr>(v_),
                                       std::vector<ExprPtr>({std::make_shared<IntConst>(val)}));
   }
 
@@ -60,8 +60,14 @@ class LValueHolder {
 
 inline LValueHolder _(const std::string& name) { return LValueHolder(std::make_shared<LookupLVal>(name)); }
 
-inline std::shared_ptr<LimitConst> _LimitConst(const LimitConst::Which& which, const DataType& type) {
-  return std::make_shared<LimitConst>(which, type);
+inline ExprPtr _LimitConst(const LimitConst::Which& which, const DataType& type) {
+  if (type == DataType::CUSTOM) {
+    auto lim = std::make_shared<LimitConst>(which, DataType::FLOAT32);
+    return std::make_shared<sem::CallExpr>(DataType::CUSTOM, _("as_custom4_float4"),
+            std::vector<sem::ExprPtr>({lim}));
+  } else {
+    return std::make_shared<LimitConst>(which, type);
+  }
 }
 
 inline std::shared_ptr<IndexExpr> _Index(const IndexExpr::Type& type, size_t dim) {
@@ -119,8 +125,13 @@ inline std::shared_ptr<DeclareStmt> _DeclareConst(const Type& type, const std::s
   return _Declare(type, name, _Const(init));
 }
 
-inline std::shared_ptr<CastExpr> _Cast(const Type& type, ExprPtr init) {
-  return std::make_shared<CastExpr>(type, init);
+inline ExprPtr _Cast(const Type& type, ExprPtr init) {
+  if (type.dtype == DataType::CUSTOM) { // Casting from custom type must be handled outside
+    return std::make_shared<CallExpr>(DataType::CUSTOM, _("as_custom4"),
+            std::vector<ExprPtr>({init}));
+  } else {
+    return std::make_shared<CastExpr>(type, init);
+  }
 }
 
 inline std::shared_ptr<CondExpr> _Cond(ExprPtr cond, ExprPtr tcase, ExprPtr fcase) {

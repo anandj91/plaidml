@@ -483,6 +483,8 @@ void Emit::Visit(const sem::CallExpr& n) {
       linkName = n.name;
       devectorize = true;
       break;
+    default:
+      throw std::runtime_error("BLAH BLAH");
   }
   // Find a reference to that builtin function, or generate a reference if this
   // is the first time we've called it.

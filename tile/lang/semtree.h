@@ -186,14 +186,29 @@ struct CallExpr : public Expression {
     SQRT,
     TAN,
     TANH,
+    AS_C4_F4,
+    AS_F4_C4,
+    NEG,
+    ADD,
+    MUL,
+    SUB,
+    DIV,
+    LT,
+    GT,
+    LE,
+    GE,
+    EQ,
+    NEQ,
+    SEL,
   };
+  DataType dtype;
   Function function;
   std::string name;
   std::vector<ExprPtr> vals;
   // New, desirable constructor.
-  CallExpr(Function f, const std::vector<ExprPtr>& v);
+  CallExpr(const DataType& dt, Function f, const std::vector<ExprPtr>& v);
   // Old, deprecated constructor; see comment in the implementation.
-  CallExpr(ExprPtr f, const std::vector<ExprPtr>& v);
+  CallExpr(const DataType& dt, ExprPtr f, const std::vector<ExprPtr>& v);
   void Accept(Visitor&) const final;
 };
 

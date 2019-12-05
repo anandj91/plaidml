@@ -554,7 +554,11 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
     }
 
     sem::ExprPtr opexpr = nullptr;
-    if (bin_ops.count(post_op.f.fn)) {
+    bool isCust = (vars.at(post_op.output).shape.type == DataType::CUSTOM);
+    for (auto in: post_op.inputs) {
+      isCust |= (vars.at(in).shape.type == DataType::CUSTOM);
+    }
+    if (!isCust && bin_ops.count(post_op.f.fn)) {
       std::string opname = bin_ops.at(post_op.f.fn);
       opexpr = std::make_shared<sem::BinaryExpr>(opname, inexprs[0], inexprs[1]);
     } else if (post_op.f.fn == "cond") {
@@ -564,20 +568,33 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
         case DataType::FLOAT64:
           inexprs[0] = (inexprs[0] != 0.0);
           break;
+        case DataType::CUSTOM: {
+          sem::Type custtype = {sem::Type::VALUE, DataType::CUSTOM, op.agg_vec};
+          auto zero = _Cast(custtype, _Const(0.0));
+          inexprs[0] = (inexprs[0] != zero);
+          break;
+        }
         case DataType::BOOLEAN:
           break;
         default:
           inexprs[0] = (inexprs[0] != 0);
           break;
       }
-      opexpr = _Cond(inexprs[0], inexprs[1], inexprs[2]);
-    } else if (post_op.f.fn == "neg") {
+      auto _true = inexprs[1];
+      auto _false = inexprs[2];
+      sem::Type declatype{sem::Type::VALUE, vars.at(post_op.output).shape.type};
+      if (isCust) {
+        _true = _Cast(declatype, _true);
+        _false = _Cast(declatype, _false);
+      }
+      opexpr = _Cond(inexprs[0], _true, _false);
+    } else if (!isCust && post_op.f.fn == "neg") {
       opexpr = std::make_shared<sem::UnaryExpr>("-", inexprs[0]);
     } else if (post_op.f.fn == "bit_not") {
       opexpr = std::make_shared<sem::UnaryExpr>("~", inexprs[0]);
     } else if (post_op.f.fn == "ident" || post_op.f.fn == "reshape") {
       opexpr = inexprs[0];
-    } else if (post_op.f.fn.substr(0, 3) == "as_") {
+    } else if (!isCust && post_op.f.fn.substr(0, 3) == "as_") {
       sem::Type declatype{sem::Type::VALUE, vars.at(post_op.output).shape.type, op.agg_vec};
       opexpr = _Cast(declatype, inexprs[0]);
     } else if (post_op.f.fn == "index") {
@@ -603,7 +620,7 @@ KernelInfo GenContract(const string& kname, const DirectSettings& settings, cons
       }
       opexpr = poly_eval;
     } else {
-      opexpr = std::make_shared<sem::CallExpr>(_(post_op.f.fn), inexprs);
+      opexpr = std::make_shared<sem::CallExpr>(vars.at(post_op.output).shape.type, _(post_op.f.fn), inexprs);
     }
     assert(static_cast<bool>(opexpr));
 

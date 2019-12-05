@@ -63,7 +63,7 @@ sem::ExprPtr SemtreeEmitter::default_intrinsic_emitter(const stripe::Intrinsic& 
     for (const auto& str : in.inputs) {
       inputs.push_back(_(scalar_name(str)));
     }
-    opexpr = std::make_shared<sem::CallExpr>(_(in.name), inputs);
+    opexpr = std::make_shared<sem::CallExpr>(DataType::INVALID, _(in.name), inputs);
   }
   return opexpr;
 }
