@@ -41,7 +41,7 @@ class InsnOptimizer : public sem::Visitor {
           // Replace mul/add with a mad() call unless hardware settings have disabled it.
           // Some platforms (i.e. Intel HD Graphics 4000) perform worse with this optimization.
           if (is_float(add_ty.dtype) && is_float(mul_ty.dtype) && !settings_.disable_mad()) {
-            auto mad = _("mad")(mul->lhs, mul->rhs, add->lhs);
+            auto mad = _("bs_mad")(mul->lhs, mul->rhs, add->lhs);
             const_cast<sem::DeclareStmt&>(node).init = mad;
           }
         }

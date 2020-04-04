@@ -189,6 +189,15 @@ boost::future<std::unique_ptr<hal::Library>> Compiler::Build(const context::Cont
     code << k_subgroup_microkernels;
   }
 
+  std::ifstream bs_mad("/tmp/bs_mad.cl");
+  if (bs_mad.is_open()) {
+    std::string line;
+    while (std::getline(bs_mad, line)) {
+      code << line << std::endl;
+    }
+    bs_mad.close();
+  }
+
   auto env_cache = env::Get("PLAIDML_OPENCL_CACHE");
   fs::path cache_dir;
   if (env_cache.length()) {
@@ -248,6 +257,8 @@ boost::future<std::unique_ptr<hal::Library>> Compiler::Build(const context::Cont
   proto::BuildInfo binfo;
   *binfo.mutable_device_id() = device_state_->id();
   binfo.set_src(code.str());
+  std::cout << "GENERATED CODE:\n";
+  std::cout << code.str() << std::endl;
   const char* src = binfo.src().c_str();
   Err err;
 
