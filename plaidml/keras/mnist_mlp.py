@@ -7,9 +7,11 @@ Gets to 98.40% test accuracy after 20 epochs
 
 from __future__ import print_function
 
+import plaidml
 import plaidml.keras
 plaidml.keras.install_backend()
 import plaidml.keras.backend as K
+#plaidml._internal_set_vlog(4)
 
 from keras.datasets import mnist
 from keras.models import Sequential
@@ -38,7 +40,7 @@ y_train = np_utils.to_categorical(y_train, num_classes)
 y_test = np_utils.to_categorical(y_test, num_classes)
 
 base_type = plaidml.DType.FLOAT32
-new_type = plaidml.DType.CUSTOM
+new_type = plaidml.DType.FLOAT32
 
 class Cast(Layer):
     def __init__(self, **kwargs):
