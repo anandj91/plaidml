@@ -33,7 +33,7 @@ model_checkpoint = ModelCheckpoint(weights_file, monitor='val_acc', save_best_on
                                    save_weights_only=True, mode='auto')
 
 batch_size = 32
-nb_classes = 10
+nb_classes = 100
 nb_epoch = 200
 data_augmentation = True
 
